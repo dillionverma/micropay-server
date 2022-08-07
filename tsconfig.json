@@ -1,0 +1,17 @@
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "module": "CommonJS",
+    "declaration": true,
+    "esModuleInterop": true,
+    "removeComments": false,
+    "preserveConstEnums": true,
+    "sourceMap": true,
+    "outDir": "./dist",
+  },
+  "ts-node": {
+    "transpileOnly": true,
+    "swc": true,
+  },
+  "exclude": ["node_modules", "tests", "dist"]
+}

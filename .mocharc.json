@@ -1,0 +1,10 @@
+{
+  "extension": [
+    "ts"
+  ],
+  "timeout": 30000,
+  "exit": true,
+  "recursive": true,
+  "require": "@swc/register",
+  "spec": "tests/**/*.spec.ts"
+}

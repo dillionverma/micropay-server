@@ -1,0 +1,25 @@
+name: Continuous Integration
+
+on: [pull_request]
+
+jobs:
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-node@v1
+        with:
+          node-version: 16.x
+
+      - name: yarn install
+        if: steps.node-modules-cache.outputs.cache-hit != 'true'
+        run: yarn install
+
+      - run: yarn test
+
+      - name: Get test coverage
+        uses: coverallsapp/github-action@master
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
