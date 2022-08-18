@@ -1,10 +1,10 @@
-<h1 align="center">Welcome to typescript-starter 👋</h1>
+<h1 align="center">Welcome to Lightning SMS Server 👋</h1>
 
 <div align="center">
 
 [![Status](https://img.shields.io/badge/status-active-success.svg)]()
-[![GitHub Issues](https://img.shields.io/github/issues/dillionverma/typescript-starter.svg)](https://github.com/dillionverma/typescript-starter/issues)
-[![GitHub Pull Requests](https://img.shields.io/github/issues-pr/dillionverma/typescript-starter.svg)](https://github.com/dillionverma/typescript-starter/pulls)
+[![GitHub Issues](https://img.shields.io/github/issues/dillionverma/lightning-sms-server.svg)](https://github.com/dillionverma/lightning-sms-server/issues)
+[![GitHub Pull Requests](https://img.shields.io/github/issues-pr/dillionverma/lightning-sms-server.svg)](https://github.com/dillionverma/lightning-sms-server/pulls)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](/LICENSE)
 
 </div>

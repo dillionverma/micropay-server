@@ -1,9 +1,9 @@
 interface Config {
-  myEnvVar: string;
+  smspoolApiKey: string;
 }
 
 const config: Config = {
-  myEnvVar: process.env.MY_ENV_VAR,
+  smspoolApiKey: process.env.SMS_POOL_API_KEY,
 };
 
 export default config;

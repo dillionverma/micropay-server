@@ -1,7 +1,7 @@
 {
-  "name": "typescript-starter",
+  "name": "lightning-sms-server",
   "version": "1.0.2",
-  "description": "Modern typescript starter boilerplate",
+  "description": "Lightning SMS Server",
   "main": "index.js",
   "scripts": {
     "start": "yarn build && NODE_ENV=production node -r dotenv-safe/config dist/index.js",
@@ -15,6 +15,7 @@
   "author": "Dillion Verma",
   "license": "MIT",
   "dependencies": {
+    "axios": "^0.27.2",
     "chai": "^4.3.6",
     "chai-as-promised": "^7.1.1",
     "express": "^4.18.1"
