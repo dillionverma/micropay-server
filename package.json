@@ -1,7 +1,7 @@
 {
-  "name": "lightning-sms-server",
+  "name": "lightning-dalle2-server",
   "version": "1.0.2",
-  "description": "Lightning SMS Server",
+  "description": "Lightning Dalle2 Server",
   "main": "index.js",
   "scripts": {
     "start": "yarn build && NODE_ENV=production node -r dotenv-safe/config dist/index.js",
@@ -12,13 +12,23 @@
     "lint:fix": "eslint --ignore-path .eslintignore -c .eslintrc.js . --fix"
   },
   "keywords": [],
-  "author": "Dillion Verma",
+  "author": "",
   "license": "MIT",
   "dependencies": {
+    "@grpc/grpc-js": "^1.6.10",
+    "@grpc/proto-loader": "^0.7.2",
+    "@supabase/supabase-js": "^1.35.6",
+    "aws-sdk": "^2.1209.0",
     "axios": "^0.27.2",
     "chai": "^4.3.6",
     "chai-as-promised": "^7.1.1",
-    "express": "^4.18.1"
+    "cors": "^2.8.5",
+    "express": "^4.18.1",
+    "image-downloader": "^4.3.0",
+    "lightning": "^5.19.0",
+    "ln-service": "^53.17.5",
+    "node-dalle2": "^1.1.0",
+    "telegraf": "^4.9.0"
   },
   "devDependencies": {
     "@istanbuljs/nyc-config-typescript": "^1.0.2",
