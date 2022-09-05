@@ -213,21 +213,29 @@ app.post(
         Satoshis: ${invoice.tokens}
         `;
 
-        await personalTelegram.sendMediaGroup(
-          config.telegramUserId,
-          images.map((img) => ({ type: "photo", media: img, caption: prompt }))
-        );
+        try {
+          await personalTelegram.sendMediaGroup(
+            config.telegramUserId,
+            images.map((img) => ({
+              type: "photo",
+              media: img,
+              caption: prompt,
+            }))
+          );
 
-        await groupTelegram.sendMediaGroup(
-          config.telegramGroupId,
-          images.map((img, i) => ({
-            type: "photo",
-            media: img,
-            caption: i === 0 ? prompt : "",
-          }))
-        );
+          await groupTelegram.sendMediaGroup(
+            config.telegramGroupId,
+            images.map((img, i) => ({
+              type: "photo",
+              media: img,
+              caption: i === 0 ? prompt : "",
+            }))
+          );
 
-        await personalTelegram.sendMessage(config.telegramUserId, text);
+          await personalTelegram.sendMessage(config.telegramUserId, text);
+        } catch {
+          console.error("Posting to telegram failed");
+        }
 
         // Update order to indicate that images have been generated
         const { data: updatedOrder, error: error2 } = await supabase
