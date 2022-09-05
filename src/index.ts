@@ -1,3 +1,5 @@
+import * as Sentry from "@sentry/node";
+import * as Tracing from "@sentry/tracing";
 import { createClient } from "@supabase/supabase-js";
 import aws from "aws-sdk";
 import axios from "axios";
@@ -39,6 +41,29 @@ const dalle = new Dalle({ apiKey: config.dalleApiKey });
 
 const PORT = 3001;
 const app = express();
+
+Sentry.init({
+  dsn: config.sentryDsn,
+  integrations: [
+    // enable HTTP calls tracing
+    new Sentry.Integrations.Http({ tracing: true }),
+    // enable Express.js middleware tracing
+    new Tracing.Integrations.Express({ app }),
+  ],
+
+  environment: process.env.NODE_ENV,
+  // Set tracesSampleRate to 1.0 to capture 100%
+  // of transactions for performance monitoring.
+  // We recommend adjusting this value in production
+  tracesSampleRate: 1.0,
+});
+
+// RequestHandler creates a separate execution context using domains, so that every
+// transaction/span/breadcrumb is attached to its own Hub instance
+app.use(Sentry.Handlers.requestHandler());
+// TracingHandler creates a trace for every incoming request
+app.use(Sentry.Handlers.tracingHandler());
+
 app.use(cors());
 app.use(express.urlencoded({ extended: true })); // parse application/x-www-form-urlencoded
 app.use(express.json()); // parse application/json

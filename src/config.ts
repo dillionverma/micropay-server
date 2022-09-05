@@ -5,6 +5,7 @@ interface Config {
   supabaseApiKey: string;
   telegramToken: string;
   telegramUserId: string;
+  sentryDsn: string;
   awsAccessKey: string;
   awsSecretKey: string;
   adminMacaroon: string;
@@ -18,6 +19,7 @@ const config: Config = {
   supabaseApiKey: process.env.SUPABASE_API_KEY,
   telegramToken: process.env.TELEGRAM_TOKEN,
   telegramUserId: process.env.TELEGRAM_USER_ID,
+  sentryDsn: process.env.SENTRY_DSN,
   awsAccessKey: process.env.AWS_ACCESS_KEY,
   awsSecretKey: process.env.AWS_SECRET_KEY,
   adminMacaroon: process.env.ADMIN_MACAROON,
