@@ -83,6 +83,8 @@ export class Dalle {
             const data: Task = await response.data;
 
             if (data.status === "rejected") {
+              console.log("Task rejected");
+              console.log(data);
               clearInterval(refreshIntervalId);
               resolve(data.status_information as ImageGenerations);
             } else if (data.status === "succeeded") {

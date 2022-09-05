@@ -188,6 +188,8 @@ app.post(
 
         // Generate images
         const { data } = await dalle.generate(prompt);
+
+        console.log("DATA: ", data);
         // const images = data.map((data) => data.generation.image_path);
 
         // Upload to S3
