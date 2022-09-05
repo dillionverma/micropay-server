@@ -16,8 +16,8 @@ aws.config.credentials = new aws.Credentials(
 );
 const s3 = new aws.S3();
 
-const telegram: Telegram = new Telegram(config.telegramToken);
-
+const personalTelegram: Telegram = new Telegram(config.personalTelegramToken);
+const groupTelegram: Telegram = new Telegram(config.groupTelegramToken);
 const supabase = createClient(config.supabaseUrl, config.supabaseApiKey);
 
 type Order = {
@@ -125,7 +125,7 @@ app.get("/invoice", async (req, res) => {
     Invoice Tokens: ${invoice.tokens}
     `;
 
-    await telegram.sendMessage(config.telegramUserId, text);
+    await personalTelegram.sendMessage(config.telegramUserId, text);
     if (error) return res.status(500).send({ error: error.message });
     console.log("Invoice generated: ", invoice);
     res.status(200).send(invoice);
@@ -211,11 +211,21 @@ app.post(
         Satoshis: ${invoice.tokens}
         `;
 
-        await telegram.sendMediaGroup(
+        await personalTelegram.sendMediaGroup(
           config.telegramUserId,
           images.map((img) => ({ type: "photo", media: img, caption: prompt }))
         );
-        await telegram.sendMessage(config.telegramUserId, text);
+
+        await groupTelegram.sendMediaGroup(
+          config.telegramGroupId,
+          images.map((img, i) => ({
+            type: "photo",
+            media: img,
+            caption: i === 0 ? prompt : "",
+          }))
+        );
+
+        await personalTelegram.sendMessage(config.telegramUserId, text);
 
         // Update order to indicate that images have been generated
         const { data: updatedOrder, error: error2 } = await supabase
