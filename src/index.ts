@@ -233,8 +233,9 @@ app.post(
           );
 
           await personalTelegram.sendMessage(config.telegramUserId, text);
-        } catch {
+        } catch (e) {
           console.error("Posting to telegram failed");
+          console.error(e);
         }
 
         // Update order to indicate that images have been generated
