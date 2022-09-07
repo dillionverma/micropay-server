@@ -72,6 +72,7 @@ export class Dalle {
         const task = response.data as Task;
 
         const refreshIntervalId = setInterval(async () => {
+          console.log("checking status");
           try {
             const response = await axios(`${this.url}/${task.id}`, {
               headers: {
@@ -88,7 +89,7 @@ export class Dalle {
               clearInterval(refreshIntervalId);
               resolve(data.status_information as ImageGenerations);
             } else if (data.status === "succeeded") {
-              console.log("Dalle-2 generated: ", data);
+              console.log("Dalle-2 generated: ", JSON.stringify(data));
               const generations = data.generations;
               clearInterval(refreshIntervalId);
               resolve(generations as ImageGenerations);
