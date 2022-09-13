@@ -32,6 +32,8 @@ type Order = {
   prompt: string;
   environment: string;
   refundInvoice: string;
+  rating: number;
+  feedback: string;
 };
 
 const { adminMacaroon: macaroon, tlsCert: cert, host } = config;
@@ -212,6 +214,31 @@ app.post(
         email,
       },
     ]);
+
+    return res.status(200).send({
+      status: "success",
+    });
+  }
+);
+
+app.post(
+  "/feedback",
+  async (
+    req: Request<
+      unknown,
+      unknown,
+      { invoiceId: string; rating: number; feedback: string },
+      unknown
+    >,
+    res
+  ) => {
+    const { invoiceId, rating, feedback } = req.body;
+    // Update order to indicate that images have been generated
+    const { data: updatedOrder, error: error2 } = await supabase
+      .from<Order>("Orders")
+      .update({ rating, feedback })
+      .match({ invoice_id: invoiceId })
+      .single();
 
     return res.status(200).send({
       status: "success",
