@@ -3,6 +3,7 @@ import * as Tracing from "@sentry/tracing";
 import { createClient } from "@supabase/supabase-js";
 import aws from "aws-sdk";
 import axios from "axios";
+import { boltwall } from "boltwall";
 import cors from "cors";
 import express, { Request } from "express";
 import lnService from "lightning";
@@ -10,6 +11,62 @@ import { Telegram } from "telegraf";
 import config from "./config";
 import { Dalle } from "./Dalle";
 import { Dalle2 } from "./Dalle2";
+
+import { Configuration, OpenAIApi } from "openai";
+
+interface Result {
+  categories: {
+    hate: boolean;
+    "hate/threatening": boolean;
+    "self-harm": boolean;
+    sexual: boolean;
+    "sexual/minors": boolean;
+    violence: boolean;
+    "violence/graphic": boolean;
+  };
+  category_scores: {
+    hate: number;
+    "hate/threatening": number;
+    "self-harm": number;
+    sexual: number;
+    "sexual/minors": number;
+    violence: number;
+    "violence/graphic": number;
+  };
+  flagged: true;
+}
+interface ModerationResponse {
+  id: string;
+  model: string;
+  results: Result[];
+}
+const configuration = new Configuration({
+  apiKey: config.openaiApiKey,
+});
+const openai = new OpenAIApi(configuration);
+
+const isFlagged = async (text: string): Promise<boolean> => {
+  const response = await axios.post<ModerationResponse>(
+    "https://api.openai.com/v1/moderations",
+    {
+      input: text,
+    },
+    {
+      headers: {
+        Authorization: `Bearer ${config.openaiApiKey}`,
+      },
+    }
+  );
+
+  if (response.data.results.length === 0) {
+    // Something went wrong
+    return false;
+  }
+
+  console.log(response.data.results[0]);
+
+  return response.data.results[0].flagged;
+};
 
 aws.config.credentials = new aws.Credentials(
   config.awsAccessKey,
@@ -69,7 +126,8 @@ app.use(Sentry.Handlers.requestHandler());
 // TracingHandler creates a trace for every incoming request
 app.use(Sentry.Handlers.tracingHandler());
 
-app.use(cors());
+// Enable WWW-authenticate header for boltwall
+app.use(cors({ exposedHeaders: ["WWW-Authenticate"] }));
 app.use(express.urlencoded({ extended: true })); // parse application/x-www-form-urlencoded
 app.use(express.json()); // parse application/json
 
@@ -125,6 +183,17 @@ const uploadFileToS3 = async (
 };
 
 app.get("/", async (req, res) => {
+  // await groupTelegram.sendMessage(config.telegramGroupId, "test");
+
+  // const chat = await groupTelegram.getChat("-1661692163");
+  // console.log(chat);
+
+  // const safe = await isFlagged("I want to kill them.");
+  // const safe2 = await isFlagged("vladmir putin");
+
+  // console.log(safe);
+  // console.log(safe2);
+
   res.status(200).send("Hello World");
 });
 
@@ -426,6 +495,15 @@ app.post(
     }
   }
 );
+
+app.use(boltwall({ minAmount: 1000 }));
+
+app.post("/v2/generate", (req, res) => {
+  res.json({
+    message:
+      "Protected route! This message will only be returned if an invoice has been paid",
+  });
+});
 
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);

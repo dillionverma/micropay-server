@@ -12,6 +12,9 @@ interface Config {
   awsSecretKey: string;
   adminMacaroon: string;
   tlsCert: string;
+  openaiApiKey: string;
+  lndSocket: string;
+  sessionSecret: string;
 }
 
 const config: Config = {
@@ -26,8 +29,11 @@ const config: Config = {
   sentryDsn: process.env.SENTRY_DSN,
   awsAccessKey: process.env.AWS_ACCESS_KEY,
   awsSecretKey: process.env.AWS_SECRET_KEY,
-  adminMacaroon: process.env.ADMIN_MACAROON,
-  tlsCert: process.env.TLS_CERT,
+  adminMacaroon: process.env.LND_MACAROON,
+  tlsCert: process.env.LND_TLS_CERT,
+  openaiApiKey: process.env.OPENAI_API_KEY,
+  lndSocket: process.env.LND_SOCKET,
+  sessionSecret: process.env.SESSION_SECRET,
 };
 
 export default config;
