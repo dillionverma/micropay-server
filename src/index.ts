@@ -164,6 +164,7 @@ app.post(
     `;
 
       await personalTelegram.sendMessage(config.telegramUserId, text);
+      await personalTelegram.sendMessage(config.telegramUserIdHaseab, text);
       if (error) return res.status(500).send({ error: error.message });
       console.log("Invoice generated: ", invoice);
       res.status(200).send(invoice);
@@ -387,6 +388,14 @@ app.post(
                 caption: prompt,
               }))
             );
+            await personalTelegram.sendMediaGroup(
+              config.telegramUserId,
+              images.map((img) => ({
+                type: "photo",
+                media: img,
+                caption: prompt,
+              }))
+            );
 
             // Only send to group telegram if not in dev
             if (process.env.NODE_ENV === "production") {
@@ -401,6 +410,10 @@ app.post(
             }
 
             await personalTelegram.sendMessage(config.telegramUserId, text);
+            await personalTelegram.sendMessage(
+              config.telegramUserIdHaseab,
+              text
+            );
           } catch (e) {
             console.error("Posting to telegram failed");
             console.error(e);
