@@ -50,6 +50,18 @@ export interface ImageData {
   is_public: boolean;
 }
 
+/**
+ * DalleErrorResponse is the error response from the Dalle API
+ * Example:
+  {
+    error: {
+      message: 'Incorrect API key provided: sess-0fV*********************************x6Jc. You can find your API key at https://beta.openai.com.',
+      type: 'invalid_request_error',
+      param: null,
+      code: 'invalid_api_key'
+    }
+  }
+ */
 export interface DalleErrorResponse {
   message: string;
   type: string;
@@ -186,5 +198,31 @@ export class Dalle2 {
       },
     });
     return response.data;
+  }
+
+  async isTokenValid(): Promise<boolean> {
+    try {
+      const response = await axios(`${this.url}/billing/credit_summary`, {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${this.bearerToken}`,
+          "Content-Type": "application/json",
+        },
+        validateStatus: () => true, // don't throw exception if status < 100 or status > 300 (default behavior).
+      });
+
+      if (response.data.error) {
+        console.error(response.data.error.message);
+        return false;
+      }
+      return true;
+    } catch (error) {
+      // Something wrong happened, probably not a valid token.
+      // if error.response exists, that implies this is an Axios Error
+      if (error.response) {
+        console.error(new DalleError(error.response.data.error)); // data.error is the structure of the response from OpenAI
+      }
+    }
+    return false;
   }
 }
