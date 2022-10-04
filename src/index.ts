@@ -46,7 +46,7 @@ const { lnd } = lnService.authenticatedLndGrpc({
 const dalle = new Dalle({ apiKey: config.dalleApiKey });
 const dalle2 = new Dalle2(config.dalleApiKey);
 
-const PORT = 3001;
+const PORT = 3002;
 const app = express();
 
 Sentry.init({
@@ -136,6 +136,14 @@ app.post(
   "/invoice",
   async (req: Request<unknown, unknown, { prompt: string }, unknown>, res) => {
     const { prompt } = req.body;
+
+    const isValid = await dalle2.isTokenValid();
+    const text = "OpenAI Token expired";
+    if (!isValid) {
+      await personalTelegram.sendMessage(config.telegramUserId, text);
+      await personalTelegram.sendMessage(config.telegramUserIdHaseab, text);
+      return res.status(500).send({ error: "Dalle token has expired" });
+    }
 
     try {
       // https://bitcoin.stackexchange.com/questions/85951/whats-the-maximum-size-of-the-memo-in-a-ln-payment-request

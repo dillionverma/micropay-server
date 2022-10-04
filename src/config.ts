@@ -15,7 +15,7 @@ interface Config {
   tlsCert: string;
 }
 
-const config = {
+const config: Config = {
   host: process.env.HOST,
   dalleApiKey: process.env.DALLE_API_KEY,
   supabaseUrl: process.env.SUPABASE_URL,
