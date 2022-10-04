@@ -1,7 +1,5 @@
 import chai from "chai";
 import chaiAsPromised from "chai-as-promised";
-import config from "../src/config";
-import { Dalle } from "../src/Dalle";
 
 chai.use(chaiAsPromised);
 const expect = chai.expect;
@@ -60,19 +58,15 @@ describe("Index", () => {
 
 describe("generate images", () => {
   it("should generate images", async () => {
-    const dalle = new Dalle({ apiKey: config.dalleApiKey });
-
-    // Call the Dall-e 2 API
-    const response = await dalle.generate(
-      "a matte painting of a girl with a backpack and a smartphone that traveled back in time to an ancient Greek colosseum with gladiators, showing her back"
-    );
-
-    console.log(response);
-
-    // Get the image array from the response object
-    const { data } = response;
-
-    // Return the image array
-    return data;
+    // const dalle = new Dalle({ apiKey: config.dalleApiKey });
+    // // Call the Dall-e 2 API
+    // const response = await dalle.generate(
+    //   "a matte painting of a girl with a backpack and a smartphone that traveled back in time to an ancient Greek colosseum with gladiators, showing her back"
+    // );
+    // console.log(response);
+    // // Get the image array from the response object
+    // const { data } = response;
+    // // Return the image array
+    // return data;
   });
 });
