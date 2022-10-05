@@ -138,7 +138,10 @@ app.post(
     const { prompt } = req.body;
 
     const isValid = await dalle2.isTokenValid();
-    const text = "OpenAI Token expired";
+    const text =
+      process.env.NODE_ENV === "production"
+        ? "Production: OpenAI Token expired"
+        : "Dev: Open AI Token expired";
     if (!isValid) {
       await personalTelegram.sendMessage(config.telegramUserId, text);
       await personalTelegram.sendMessage(config.telegramUserIdHaseab, text);
