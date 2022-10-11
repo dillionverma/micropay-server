@@ -13,6 +13,7 @@ interface Config {
   awsSecretKey: string;
   adminMacaroon: string;
   tlsCert: string;
+  mockImages: string;
 }
 
 const config: Config = {
@@ -30,6 +31,7 @@ const config: Config = {
   awsSecretKey: process.env.AWS_SECRET_KEY,
   adminMacaroon: process.env.ADMIN_MACAROON,
   tlsCert: process.env.TLS_CERT,
+  mockImages: process.env.MOCK_IMAGES,
 };
 
 export default config;
