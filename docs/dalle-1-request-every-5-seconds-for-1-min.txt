@@ -1,0 +1,816 @@
+    ~/s/d/mi/lightning-dalle2-server    dillion/micro-92-set-up-test-framework *2 !2 ?1  yarn test              INT ✘  29s  
+yarn run v1.22.18
+$ NODE_ENV=test nyc mocha -r dotenv-safe/config
+
+
+  Dalle-2 API
+    investigate rate limit for task creation
+      - should create 5 tasks at the same time to see if they succeed
+      - should create 20 tasks at the same time to see if they succeed
+12:57:11 PM  Creating task...
+Task created {
+  id: 'task-wy1uqPC2jXi3WxzrqouZ4jCk',
+  prompt: 'an astronaut lounging in a tropical resort in space, pixel art',
+  status: {}
+}
+Task pending { id: 'task-wy1uqPC2jXi3WxzrqouZ4jCk', status: {} }
+12:57:16 PM  Creating task...
+Task created {
+  id: 'task-RXyKxPon9eUdKrFFn9iU3cTm',
+  prompt: '"a sea otter with a pearl earring" by Johannes Vermeer',
+  status: {}
+}
+Task pending { id: 'task-wy1uqPC2jXi3WxzrqouZ4jCk', status: {} }
+Task pending { id: 'task-RXyKxPon9eUdKrFFn9iU3cTm', status: {} }
+Task pending { id: 'task-wy1uqPC2jXi3WxzrqouZ4jCk', status: {} }
+12:57:21 PM  Creating task...
+Task created {
+  id: 'task-8o419w9V8aMA1nclrXn7Viwj',
+  prompt: "a macro 35mm photograph of two mice in Hawaii, they're each wearing tiny swimsuits and are carrying tiny surf boards, digital art",
+  status: {}
+}
+Task pending { id: 'task-RXyKxPon9eUdKrFFn9iU3cTm', status: {} }
+Task succeeded { id: 'task-wy1uqPC2jXi3WxzrqouZ4jCk', status: {} }
+Task pending { id: 'task-8o419w9V8aMA1nclrXn7Viwj', status: {} }
+Task pending { id: 'task-RXyKxPon9eUdKrFFn9iU3cTm', status: {} }
+12:57:26 PM  Creating task...
+Task created {
+  id: 'task-6yFCY0PpKGVPLztZc1bWNnvY',
+  prompt: 'crayon drawing of several cute colorful monsters with ice cream cone bodies on dark blue paper',
+  status: {}
+}
+[
+  'https://labs.openai.com/s/b7p1QezPKeiE0cg1gkqrpSPU',
+  'https://labs.openai.com/s/qhk76PtoBOPRtwYEgnvZKGtZ',
+  'https://labs.openai.com/s/XREhtio4N1qnBffK8tlRCL19',
+  'https://labs.openai.com/s/uGwPpA0r5m9vmV8pD9SSGkft'
+]
+Task pending { id: 'task-8o419w9V8aMA1nclrXn7Viwj', status: {} }
+Task succeeded { id: 'task-RXyKxPon9eUdKrFFn9iU3cTm', status: {} }
+Task pending { id: 'task-6yFCY0PpKGVPLztZc1bWNnvY', status: {} }
+[
+  'https://labs.openai.com/s/nDBFEGQrrm0634OS4TlTp5cY',
+  'https://labs.openai.com/s/z2UWzNpxP7ck4aRU51rey8GX',
+  'https://labs.openai.com/s/Fcx7KInyCdiTWD58EJ0Jnv9K',
+  'https://labs.openai.com/s/94HJIA06KHR7HfcUSmFm5vi5'
+]
+Task pending { id: 'task-8o419w9V8aMA1nclrXn7Viwj', status: {} }
+12:57:31 PM  Creating task...
+Task created {
+  id: 'task-FY0M3snAMgAGTMb52owi8AIw',
+  prompt: 'a fortune-telling shiba inu reading your fate in a giant hamburger, digital art',
+  status: {}
+}
+Task pending { id: 'task-6yFCY0PpKGVPLztZc1bWNnvY', status: {} }
+Task succeeded { id: 'task-8o419w9V8aMA1nclrXn7Viwj', status: {} }
+Task pending { id: 'task-FY0M3snAMgAGTMb52owi8AIw', status: {} }
+[
+  'https://labs.openai.com/s/QvHQCatzqhdI14ypWW2ULWSc',
+  'https://labs.openai.com/s/dDt5U0Px0JxTupN7nasHXS0x',
+  'https://labs.openai.com/s/QMA9qJwPObLk0i2TsY88NbdG',
+  'https://labs.openai.com/s/pkWSD8VsPu8JKOlgWGd8MCcd'
+]
+Task pending { id: 'task-6yFCY0PpKGVPLztZc1bWNnvY', status: {} }
+12:57:36 PM  Creating task...
+Error occured while creating task:  [AxiosError: Request failed with status code 429] {
+  code: 'ERR_BAD_REQUEST',
+  config: {
+    transitional: {
+      silentJSONParsing: true,
+      forcedJSONParsing: true,
+      clarifyTimeoutError: false
+    },
+    adapter: [Function: httpAdapter],
+    transformRequest: [ [Function: transformRequest] ],
+    transformResponse: [ [Function: transformResponse] ],
+    timeout: 0,
+    xsrfCookieName: 'XSRF-TOKEN',
+    xsrfHeaderName: 'X-XSRF-TOKEN',
+    maxContentLength: -1,
+    maxBodyLength: -1,
+    env: { FormData: [Function] },
+    validateStatus: [Function: validateStatus],
+    headers: {
+      Accept: 'application/json, text/plain, */*',
+      'Content-Type': 'application/json',
+      Authorization: 'Bearer sess-lO0BS68l7bzGPdYLd9rpPvAXZYLaf01cTb91Vq13',
+      'User-Agent': 'axios/0.27.2',
+      'Content-Length': 132
+    },
+    method: 'post',
+    data: '{"task_type":"text2im","prompt":{"caption":"a bowl of soup that is also a portal to another dimension, digital art","batch_size":4}}',
+    url: 'https://labs.openai.com/api/labs/tasks'
+  },
+  request: <ref *1> ClientRequest {
+    _events: [Object: null prototype] {
+      error: [Array],
+      abort: [Function (anonymous)],
+      aborted: [Function (anonymous)],
+      connect: [Function (anonymous)],
+      socket: [Function (anonymous)],
+      timeout: [Function (anonymous)],
+      prefinish: [Function: requestOnPrefinish]
+    },
+    _eventsCount: 7,
+    _maxListeners: undefined,
+    outputData: [],
+    outputSize: 0,
+    writable: true,
+    destroyed: false,
+    _last: true,
+    chunkedEncoding: false,
+    shouldKeepAlive: false,
+    _defaultKeepAlive: true,
+    useChunkedEncodingByDefault: true,
+    sendDate: false,
+    _removedConnection: false,
+    _removedContLen: false,
+    _removedTE: false,
+    _contentLength: null,
+    _hasBody: true,
+    _trailer: '',
+    finished: true,
+    _headerSent: true,
+    socket: TLSSocket {
+      _tlsOptions: [Object],
+      _secureEstablished: true,
+      _securePending: false,
+      _newSessionPending: false,
+      _controlReleased: true,
+      secureConnecting: false,
+      _SNICallback: null,
+      servername: 'labs.openai.com',
+      alpnProtocol: false,
+      authorized: true,
+      authorizationError: null,
+      encrypted: true,
+      _events: [Object: null prototype],
+      _eventsCount: 10,
+      connecting: false,
+      _hadError: false,
+      _parent: null,
+      _host: 'labs.openai.com',
+      _readableState: [ReadableState],
+      _maxListeners: undefined,
+      _writableState: [WritableState],
+      allowHalfOpen: false,
+      _sockname: null,
+      _pendingData: null,
+      _pendingEncoding: '',
+      server: undefined,
+      _server: null,
+      ssl: [TLSWrap],
+      _requestCert: true,
+      _rejectUnauthorized: true,
+      parser: null,
+      _httpMessage: [Circular *1],
+      [Symbol(res)]: [TLSWrap],
+      [Symbol(verified)]: true,
+      [Symbol(pendingSession)]: null,
+      [Symbol(async_id_symbol)]: 935,
+      [Symbol(kHandle)]: [TLSWrap],
+      [Symbol(kSetNoDelay)]: false,
+      [Symbol(lastWriteQueueSize)]: 0,
+      [Symbol(timeout)]: null,
+      [Symbol(kBuffer)]: null,
+      [Symbol(kBufferCb)]: null,
+      [Symbol(kBufferGen)]: null,
+      [Symbol(kCapture)]: false,
+      [Symbol(kBytesRead)]: 0,
+      [Symbol(kBytesWritten)]: 0,
+      [Symbol(connect-options)]: [Object],
+      [Symbol(RequestTimeout)]: undefined
+    },
+    _header: 'POST /api/labs/tasks HTTP/1.1\r\n' +
+      'Accept: application/json, text/plain, */*\r\n' +
+      'Content-Type: application/json\r\n' +
+      'Authorization: Bearer sess-lO0BS68l7bzGPdYLd9rpPvAXZYLaf01cTb91Vq13\r\n' +
+      'User-Agent: axios/0.27.2\r\n' +
+      'Content-Length: 132\r\n' +
+      'Host: labs.openai.com\r\n' +
+      'Connection: close\r\n' +
+      '\r\n',
+    _keepAliveTimeout: 0,
+    _onPendingData: [Function: noopPendingOutput],
+    agent: Agent {
+      _events: [Object: null prototype],
+      _eventsCount: 2,
+      _maxListeners: undefined,
+      defaultPort: 443,
+      protocol: 'https:',
+      options: [Object],
+      requests: {},
+      sockets: [Object],
+      freeSockets: {},
+      keepAliveMsecs: 1000,
+      keepAlive: false,
+      maxSockets: Infinity,
+      maxFreeSockets: 256,
+      scheduling: 'lifo',
+      maxTotalSockets: Infinity,
+      totalSocketCount: 1,
+      maxCachedSessions: 100,
+      _sessionCache: [Object],
+      [Symbol(kCapture)]: false
+    },
+    socketPath: undefined,
+    method: 'POST',
+    maxHeaderSize: undefined,
+    insecureHTTPParser: undefined,
+    path: '/api/labs/tasks',
+    _ended: true,
+    res: IncomingMessage {
+      _readableState: [ReadableState],
+      _events: [Object: null prototype],
+      _eventsCount: 4,
+      _maxListeners: undefined,
+      socket: [TLSSocket],
+      httpVersionMajor: 1,
+      httpVersionMinor: 1,
+      httpVersion: '1.1',
+      complete: true,
+      headers: [Object],
+      rawHeaders: [Array],
+      trailers: {},
+      rawTrailers: [],
+      aborted: false,
+      upgrade: false,
+      url: '',
+      method: null,
+      statusCode: 429,
+      statusMessage: 'TOO MANY REQUESTS',
+      client: [TLSSocket],
+      _consuming: false,
+      _dumped: false,
+      req: [Circular *1],
+      responseUrl: 'https://labs.openai.com/api/labs/tasks',
+      redirects: [],
+      [Symbol(kCapture)]: false,
+      [Symbol(RequestTimeout)]: undefined
+    },
+    aborted: false,
+    timeoutCb: null,
+    upgradeOrConnect: false,
+    parser: null,
+    maxHeadersCount: null,
+    reusedSocket: false,
+    host: 'labs.openai.com',
+    protocol: 'https:',
+    _redirectable: Writable {
+      _writableState: [WritableState],
+      _events: [Object: null prototype],
+      _eventsCount: 3,
+      _maxListeners: undefined,
+      _options: [Object],
+      _ended: true,
+      _ending: true,
+      _redirectCount: 0,
+      _redirects: [],
+      _requestBodyLength: 132,
+      _requestBodyBuffers: [],
+      _onNativeResponse: [Function (anonymous)],
+      _currentRequest: [Circular *1],
+      _currentUrl: 'https://labs.openai.com/api/labs/tasks',
+      [Symbol(kCapture)]: false
+    },
+    [Symbol(kCapture)]: false,
+    [Symbol(kNeedDrain)]: false,
+    [Symbol(corked)]: 0,
+    [Symbol(kOutHeaders)]: [Object: null prototype] {
+      accept: [Array],
+      'content-type': [Array],
+      authorization: [Array],
+      'user-agent': [Array],
+      'content-length': [Array],
+      host: [Array]
+    }
+  },
+  response: {
+    status: 429,
+    statusText: 'TOO MANY REQUESTS',
+    headers: {
+      'content-length': '196',
+      'content-type': 'application/json',
+      vary: 'Origin',
+      'access-control-allow-origin': 'https://labs.api.openai.org',
+      'openai-version': '2020-10-01',
+      'openai-organization': 'user-ji6lpnyrrso6e6wiy5iijdca',
+      'x-request-id': '1d8a31bf0d2ddcc02cd85454e0f7fd94',
+      'openai-processing-ms': '49',
+      'strict-transport-security': 'max-age=15724800; includeSubDomains',
+      'x-azure-ref': '0AJVJYwAAAACObLie1uA1Q4pA1VaLP2/KQ0hJMzBFREdFMDUxOQA2N2IzNTRmOS02NjA5LTRjZjUtOGMzNy1hODIwZmJlZGM5NjQ=',
+      'x-cache': 'CONFIG_NOCACHE',
+      date: 'Fri, 14 Oct 2022 16:57:35 GMT',
+      connection: 'close'
+    },
+    config: {
+      transitional: [Object],
+      adapter: [Function: httpAdapter],
+      transformRequest: [Array],
+      transformResponse: [Array],
+      timeout: 0,
+      xsrfCookieName: 'XSRF-TOKEN',
+      xsrfHeaderName: 'X-XSRF-TOKEN',
+      maxContentLength: -1,
+      maxBodyLength: -1,
+      env: [Object],
+      validateStatus: [Function: validateStatus],
+      headers: [Object],
+      method: 'post',
+      data: '{"task_type":"text2im","prompt":{"caption":"a bowl of soup that is also a portal to another dimension, digital art","batch_size":4}}',
+      url: 'https://labs.openai.com/api/labs/tasks'
+    },
+    request: <ref *1> ClientRequest {
+      _events: [Object: null prototype],
+      _eventsCount: 7,
+      _maxListeners: undefined,
+      outputData: [],
+      outputSize: 0,
+      writable: true,
+      destroyed: false,
+      _last: true,
+      chunkedEncoding: false,
+      shouldKeepAlive: false,
+      _defaultKeepAlive: true,
+      useChunkedEncodingByDefault: true,
+      sendDate: false,
+      _removedConnection: false,
+      _removedContLen: false,
+      _removedTE: false,
+      _contentLength: null,
+      _hasBody: true,
+      _trailer: '',
+      finished: true,
+      _headerSent: true,
+      socket: [TLSSocket],
+      _header: 'POST /api/labs/tasks HTTP/1.1\r\n' +
+        'Accept: application/json, text/plain, */*\r\n' +
+        'Content-Type: application/json\r\n' +
+        'Authorization: Bearer sess-lO0BS68l7bzGPdYLd9rpPvAXZYLaf01cTb91Vq13\r\n' +
+        'User-Agent: axios/0.27.2\r\n' +
+        'Content-Length: 132\r\n' +
+        'Host: labs.openai.com\r\n' +
+        'Connection: close\r\n' +
+        '\r\n',
+      _keepAliveTimeout: 0,
+      _onPendingData: [Function: noopPendingOutput],
+      agent: [Agent],
+      socketPath: undefined,
+      method: 'POST',
+      maxHeaderSize: undefined,
+      insecureHTTPParser: undefined,
+      path: '/api/labs/tasks',
+      _ended: true,
+      res: [IncomingMessage],
+      aborted: false,
+      timeoutCb: null,
+      upgradeOrConnect: false,
+      parser: null,
+      maxHeadersCount: null,
+      reusedSocket: false,
+      host: 'labs.openai.com',
+      protocol: 'https:',
+      _redirectable: [Writable],
+      [Symbol(kCapture)]: false,
+      [Symbol(kNeedDrain)]: false,
+      [Symbol(corked)]: 0,
+      [Symbol(kOutHeaders)]: [Object: null prototype]
+    },
+    data: { error: [Object] }
+  }
+}
+This error originated either by throwing inside of an async function without a catch block, or by rejecting a promise which was not handled with .catch(). The promise rejected with the reason:
+Error: 
+    at Dalle2.createTask (/Users/dillionverma/src/dillionverma/micropay/lightning-dalle2-server/src/Dalle2.ts:21:628)
+    at processTicksAndRejections (internal/process/task_queues.js:95:5)
+    at Dalle2._generateAndPublish (/Users/dillionverma/src/dillionverma/micropay/lightning-dalle2-server/src/Dalle2.ts:110:23)
+    at Timeout._onTimeout (/Users/dillionverma/src/dillionverma/micropay/lightning-dalle2-server/tests/dalle2.spec.ts:189:26)
+This error originated either by throwing inside of an async function without a catch block, or by rejecting a promise which was not handled with .catch(). The promise rejected with the reason:
+Error: 
+    at Dalle2.createTask (/Users/dillionverma/src/dillionverma/micropay/lightning-dalle2-server/src/Dalle2.ts:21:628)
+    at processTicksAndRejections (internal/process/task_queues.js:95:5)
+    at Dalle2._generateAndPublish (/Users/dillionverma/src/dillionverma/micropay/lightning-dalle2-server/src/Dalle2.ts:110:23)
+    at Timeout._onTimeout (/Users/dillionverma/src/dillionverma/micropay/lightning-dalle2-server/tests/dalle2.spec.ts:189:26)
+Task pending { id: 'task-FY0M3snAMgAGTMb52owi8AIw', status: {} }
+Task succeeded { id: 'task-6yFCY0PpKGVPLztZc1bWNnvY', status: {} }
+[
+  'https://labs.openai.com/s/AtERoPqrO0rjUTn3bg5e46sd',
+  'https://labs.openai.com/s/4OmJJJiGVu1zdzGxsKtsd8in',
+  'https://labs.openai.com/s/THPV8Iho5lkKOuoTO2YIswok',
+  'https://labs.openai.com/s/5FFUfVsdw0BXp3cMxjPYQCh2'
+]
+Task pending { id: 'task-FY0M3snAMgAGTMb52owi8AIw', status: {} }
+12:57:41 PM  Creating task...
+Task created {
+  id: 'task-PSbpMcgVjn1cfN6eU2A5sDXI',
+  prompt: 'a fortune-telling shiba inu reading your fate in a giant hamburger, digital art',
+  status: {}
+}
+Task succeeded { id: 'task-FY0M3snAMgAGTMb52owi8AIw', status: {} }
+Task pending { id: 'task-PSbpMcgVjn1cfN6eU2A5sDXI', status: {} }
+[
+  'https://labs.openai.com/s/spRmN1Qc0nL1II5j12feJ8Yl',
+  'https://labs.openai.com/s/seJCQYgV2ppUGvKIW70yFLV1',
+  'https://labs.openai.com/s/LpDYkPGPQvTTUUySoNUUmxwL',
+  'https://labs.openai.com/s/3glDVNmjrspT9Wz5e5erypMr'
+]
+12:57:46 PM  Creating task...
+Task created {
+  id: 'task-B7AAP9ljyNjJJOggmj65FNPc',
+  prompt: 'an oil pastel drawing of an annoyed cat in a spaceship',
+  status: {}
+}
+Task pending { id: 'task-PSbpMcgVjn1cfN6eU2A5sDXI', status: {} }
+Task pending { id: 'task-B7AAP9ljyNjJJOggmj65FNPc', status: {} }
+Task pending { id: 'task-PSbpMcgVjn1cfN6eU2A5sDXI', status: {} }
+12:57:51 PM  Creating task...
+Task created {
+  id: 'task-SIY9POWqVUnlcfVNERC4NzoC',
+  prompt: 'a sunlit indoor lounge area with a pool with clear water and another pool with translucent pastel pink water, next to a big window, digital art',
+  status: {}
+}
+Task pending { id: 'task-B7AAP9ljyNjJJOggmj65FNPc', status: {} }
+Task succeeded { id: 'task-PSbpMcgVjn1cfN6eU2A5sDXI', status: {} }
+Task pending { id: 'task-SIY9POWqVUnlcfVNERC4NzoC', status: {} }
+[
+  'https://labs.openai.com/s/LXnoZtZXcAagqqC8J2yd0zTf',
+  'https://labs.openai.com/s/OpQEsjSsk8J9GmpBqdG2b3Z3',
+  'https://labs.openai.com/s/TzxVVOmO9G8Njf1AKXIs8MsW',
+  'https://labs.openai.com/s/XhOe8Da0dFIjUG38flKD3Y7a'
+]
+Task pending { id: 'task-B7AAP9ljyNjJJOggmj65FNPc', status: {} }
+12:57:56 PM  Creating task...
+Task created {
+  id: 'task-fnZl5Jrp6CuqXiPIEx4n8LI3',
+  prompt: 'an expressive oil painting of a basketball player dunking, depicted as an explosion of a nebula',
+  status: {}
+}
+Task pending { id: 'task-SIY9POWqVUnlcfVNERC4NzoC', status: {} }
+Task succeeded { id: 'task-B7AAP9ljyNjJJOggmj65FNPc', status: {} }
+Task pending { id: 'task-fnZl5Jrp6CuqXiPIEx4n8LI3', status: {} }
+[
+  'https://labs.openai.com/s/mtWO6iF5JxW0jy8dtzbq1vkn',
+  'https://labs.openai.com/s/v47X5gY5OHFyvQYPHAkum9NP',
+  'https://labs.openai.com/s/dckKL30C07HWHOnQIHuEPD5T',
+  'https://labs.openai.com/s/JHHiKBUI6K6relGMH9OQjlc6'
+]
+Task pending { id: 'task-SIY9POWqVUnlcfVNERC4NzoC', status: {} }
+12:58:01 PM  Creating task...
+Error occured while creating task:  [AxiosError: Request failed with status code 429] {
+  code: 'ERR_BAD_REQUEST',
+  config: {
+    transitional: {
+      silentJSONParsing: true,
+      forcedJSONParsing: true,
+      clarifyTimeoutError: false
+    },
+    adapter: [Function: httpAdapter],
+    transformRequest: [ [Function: transformRequest] ],
+    transformResponse: [ [Function: transformResponse] ],
+    timeout: 0,
+    xsrfCookieName: 'XSRF-TOKEN',
+    xsrfHeaderName: 'X-XSRF-TOKEN',
+    maxContentLength: -1,
+    maxBodyLength: -1,
+    env: { FormData: [Function] },
+    validateStatus: [Function: validateStatus],
+    headers: {
+      Accept: 'application/json, text/plain, */*',
+      'Content-Type': 'application/json',
+      Authorization: 'Bearer sess-lO0BS68l7bzGPdYLd9rpPvAXZYLaf01cTb91Vq13',
+      'User-Agent': 'axios/0.27.2',
+      'Content-Length': 102
+    },
+    method: 'post',
+    data: '{"task_type":"text2im","prompt":{"caption":"a stained glass window depicting a robot","batch_size":4}}',
+    url: 'https://labs.openai.com/api/labs/tasks'
+  },
+  request: <ref *1> ClientRequest {
+    _events: [Object: null prototype] {
+      error: [Array],
+      abort: [Function (anonymous)],
+      aborted: [Function (anonymous)],
+      connect: [Function (anonymous)],
+      socket: [Function (anonymous)],
+      timeout: [Function (anonymous)],
+      prefinish: [Function: requestOnPrefinish]
+    },
+    _eventsCount: 7,
+    _maxListeners: undefined,
+    outputData: [],
+    outputSize: 0,
+    writable: true,
+    destroyed: false,
+    _last: true,
+    chunkedEncoding: false,
+    shouldKeepAlive: false,
+    _defaultKeepAlive: true,
+    useChunkedEncodingByDefault: true,
+    sendDate: false,
+    _removedConnection: false,
+    _removedContLen: false,
+    _removedTE: false,
+    _contentLength: null,
+    _hasBody: true,
+    _trailer: '',
+    finished: true,
+    _headerSent: true,
+    socket: TLSSocket {
+      _tlsOptions: [Object],
+      _secureEstablished: true,
+      _securePending: false,
+      _newSessionPending: false,
+      _controlReleased: true,
+      secureConnecting: false,
+      _SNICallback: null,
+      servername: 'labs.openai.com',
+      alpnProtocol: false,
+      authorized: true,
+      authorizationError: null,
+      encrypted: true,
+      _events: [Object: null prototype],
+      _eventsCount: 10,
+      connecting: false,
+      _hadError: false,
+      _parent: null,
+      _host: 'labs.openai.com',
+      _readableState: [ReadableState],
+      _maxListeners: undefined,
+      _writableState: [WritableState],
+      allowHalfOpen: false,
+      _sockname: null,
+      _pendingData: null,
+      _pendingEncoding: '',
+      server: undefined,
+      _server: null,
+      ssl: [TLSWrap],
+      _requestCert: true,
+      _rejectUnauthorized: true,
+      parser: null,
+      _httpMessage: [Circular *1],
+      [Symbol(res)]: [TLSWrap],
+      [Symbol(verified)]: true,
+      [Symbol(pendingSession)]: null,
+      [Symbol(async_id_symbol)]: 1912,
+      [Symbol(kHandle)]: [TLSWrap],
+      [Symbol(kSetNoDelay)]: false,
+      [Symbol(lastWriteQueueSize)]: 0,
+      [Symbol(timeout)]: null,
+      [Symbol(kBuffer)]: null,
+      [Symbol(kBufferCb)]: null,
+      [Symbol(kBufferGen)]: null,
+      [Symbol(kCapture)]: false,
+      [Symbol(kBytesRead)]: 0,
+      [Symbol(kBytesWritten)]: 0,
+      [Symbol(connect-options)]: [Object],
+      [Symbol(RequestTimeout)]: undefined
+    },
+    _header: 'POST /api/labs/tasks HTTP/1.1\r\n' +
+      'Accept: application/json, text/plain, */*\r\n' +
+      'Content-Type: application/json\r\n' +
+      'Authorization: Bearer sess-lO0BS68l7bzGPdYLd9rpPvAXZYLaf01cTb91Vq13\r\n' +
+      'User-Agent: axios/0.27.2\r\n' +
+      'Content-Length: 102\r\n' +
+      'Host: labs.openai.com\r\n' +
+      'Connection: close\r\n' +
+      '\r\n',
+    _keepAliveTimeout: 0,
+    _onPendingData: [Function: noopPendingOutput],
+    agent: Agent {
+      _events: [Object: null prototype],
+      _eventsCount: 2,
+      _maxListeners: undefined,
+      defaultPort: 443,
+      protocol: 'https:',
+      options: [Object],
+      requests: {},
+      sockets: [Object],
+      freeSockets: {},
+      keepAliveMsecs: 1000,
+      keepAlive: false,
+      maxSockets: Infinity,
+      maxFreeSockets: 256,
+      scheduling: 'lifo',
+      maxTotalSockets: Infinity,
+      totalSocketCount: 1,
+      maxCachedSessions: 100,
+      _sessionCache: [Object],
+      [Symbol(kCapture)]: false
+    },
+    socketPath: undefined,
+    method: 'POST',
+    maxHeaderSize: undefined,
+    insecureHTTPParser: undefined,
+    path: '/api/labs/tasks',
+    _ended: true,
+    res: IncomingMessage {
+      _readableState: [ReadableState],
+      _events: [Object: null prototype],
+      _eventsCount: 4,
+      _maxListeners: undefined,
+      socket: [TLSSocket],
+      httpVersionMajor: 1,
+      httpVersionMinor: 1,
+      httpVersion: '1.1',
+      complete: true,
+      headers: [Object],
+      rawHeaders: [Array],
+      trailers: {},
+      rawTrailers: [],
+      aborted: false,
+      upgrade: false,
+      url: '',
+      method: null,
+      statusCode: 429,
+      statusMessage: 'TOO MANY REQUESTS',
+      client: [TLSSocket],
+      _consuming: false,
+      _dumped: false,
+      req: [Circular *1],
+      responseUrl: 'https://labs.openai.com/api/labs/tasks',
+      redirects: [],
+      [Symbol(kCapture)]: false,
+      [Symbol(RequestTimeout)]: undefined
+    },
+    aborted: false,
+    timeoutCb: null,
+    upgradeOrConnect: false,
+    parser: null,
+    maxHeadersCount: null,
+    reusedSocket: false,
+    host: 'labs.openai.com',
+    protocol: 'https:',
+    _redirectable: Writable {
+      _writableState: [WritableState],
+      _events: [Object: null prototype],
+      _eventsCount: 3,
+      _maxListeners: undefined,
+      _options: [Object],
+      _ended: true,
+      _ending: true,
+      _redirectCount: 0,
+      _redirects: [],
+      _requestBodyLength: 102,
+      _requestBodyBuffers: [],
+      _onNativeResponse: [Function (anonymous)],
+      _currentRequest: [Circular *1],
+      _currentUrl: 'https://labs.openai.com/api/labs/tasks',
+      [Symbol(kCapture)]: false
+    },
+    [Symbol(kCapture)]: false,
+    [Symbol(kNeedDrain)]: false,
+    [Symbol(corked)]: 0,
+    [Symbol(kOutHeaders)]: [Object: null prototype] {
+      accept: [Array],
+      'content-type': [Array],
+      authorization: [Array],
+      'user-agent': [Array],
+      'content-length': [Array],
+      host: [Array]
+    }
+  },
+  response: {
+    status: 429,
+    statusText: 'TOO MANY REQUESTS',
+    headers: {
+      'content-length': '196',
+      'content-type': 'application/json',
+      vary: 'Origin',
+      'access-control-allow-origin': 'https://labs.api.openai.org',
+      'openai-version': '2020-10-01',
+      'openai-organization': 'user-ji6lpnyrrso6e6wiy5iijdca',
+      'x-request-id': 'b947b573215e68736897252310df4c88',
+      'openai-processing-ms': '55',
+      'strict-transport-security': 'max-age=15724800; includeSubDomains',
+      'x-azure-ref': '0GZVJYwAAAACUzZ6GuqcOSrQQa4Qwq8mhQ0hJMzBFREdFMDUwNgA2N2IzNTRmOS02NjA5LTRjZjUtOGMzNy1hODIwZmJlZGM5NjQ=',
+      'x-cache': 'CONFIG_NOCACHE',
+      date: 'Fri, 14 Oct 2022 16:58:01 GMT',
+      connection: 'close'
+    },
+    config: {
+      transitional: [Object],
+      adapter: [Function: httpAdapter],
+      transformRequest: [Array],
+      transformResponse: [Array],
+      timeout: 0,
+      xsrfCookieName: 'XSRF-TOKEN',
+      xsrfHeaderName: 'X-XSRF-TOKEN',
+      maxContentLength: -1,
+      maxBodyLength: -1,
+      env: [Object],
+      validateStatus: [Function: validateStatus],
+      headers: [Object],
+      method: 'post',
+      data: '{"task_type":"text2im","prompt":{"caption":"a stained glass window depicting a robot","batch_size":4}}',
+      url: 'https://labs.openai.com/api/labs/tasks'
+    },
+    request: <ref *1> ClientRequest {
+      _events: [Object: null prototype],
+      _eventsCount: 7,
+      _maxListeners: undefined,
+      outputData: [],
+      outputSize: 0,
+      writable: true,
+      destroyed: false,
+      _last: true,
+      chunkedEncoding: false,
+      shouldKeepAlive: false,
+      _defaultKeepAlive: true,
+      useChunkedEncodingByDefault: true,
+      sendDate: false,
+      _removedConnection: false,
+      _removedContLen: false,
+      _removedTE: false,
+      _contentLength: null,
+      _hasBody: true,
+      _trailer: '',
+      finished: true,
+      _headerSent: true,
+      socket: [TLSSocket],
+      _header: 'POST /api/labs/tasks HTTP/1.1\r\n' +
+        'Accept: application/json, text/plain, */*\r\n' +
+        'Content-Type: application/json\r\n' +
+        'Authorization: Bearer sess-lO0BS68l7bzGPdYLd9rpPvAXZYLaf01cTb91Vq13\r\n' +
+        'User-Agent: axios/0.27.2\r\n' +
+        'Content-Length: 102\r\n' +
+        'Host: labs.openai.com\r\n' +
+        'Connection: close\r\n' +
+        '\r\n',
+      _keepAliveTimeout: 0,
+      _onPendingData: [Function: noopPendingOutput],
+      agent: [Agent],
+      socketPath: undefined,
+      method: 'POST',
+      maxHeaderSize: undefined,
+      insecureHTTPParser: undefined,
+      path: '/api/labs/tasks',
+      _ended: true,
+      res: [IncomingMessage],
+      aborted: false,
+      timeoutCb: null,
+      upgradeOrConnect: false,
+      parser: null,
+      maxHeadersCount: null,
+      reusedSocket: false,
+      host: 'labs.openai.com',
+      protocol: 'https:',
+      _redirectable: [Writable],
+      [Symbol(kCapture)]: false,
+      [Symbol(kNeedDrain)]: false,
+      [Symbol(corked)]: 0,
+      [Symbol(kOutHeaders)]: [Object: null prototype]
+    },
+    data: { error: [Object] }
+  }
+}
+This error originated either by throwing inside of an async function without a catch block, or by rejecting a promise which was not handled with .catch(). The promise rejected with the reason:
+Error: 
+    at Dalle2.createTask (/Users/dillionverma/src/dillionverma/micropay/lightning-dalle2-server/src/Dalle2.ts:21:628)
+    at processTicksAndRejections (internal/process/task_queues.js:95:5)
+    at Dalle2._generateAndPublish (/Users/dillionverma/src/dillionverma/micropay/lightning-dalle2-server/src/Dalle2.ts:110:23)
+    at Timeout._onTimeout (/Users/dillionverma/src/dillionverma/micropay/lightning-dalle2-server/tests/dalle2.spec.ts:189:26)
+This error originated either by throwing inside of an async function without a catch block, or by rejecting a promise which was not handled with .catch(). The promise rejected with the reason:
+Error: 
+    at Dalle2.createTask (/Users/dillionverma/src/dillionverma/micropay/lightning-dalle2-server/src/Dalle2.ts:21:628)
+    at processTicksAndRejections (internal/process/task_queues.js:95:5)
+    at Dalle2._generateAndPublish (/Users/dillionverma/src/dillionverma/micropay/lightning-dalle2-server/src/Dalle2.ts:110:23)
+    at Timeout._onTimeout (/Users/dillionverma/src/dillionverma/micropay/lightning-dalle2-server/tests/dalle2.spec.ts:189:26)
+Task pending { id: 'task-fnZl5Jrp6CuqXiPIEx4n8LI3', status: {} }
+Task succeeded { id: 'task-SIY9POWqVUnlcfVNERC4NzoC', status: {} }
+Task pending { id: 'task-fnZl5Jrp6CuqXiPIEx4n8LI3', status: {} }
+[
+  'https://labs.openai.com/s/R5tIzh1ijmKOahGT7OQLbZ7p',
+  'https://labs.openai.com/s/nudcmvzxzCr6N7puHDX0u6lG',
+  'https://labs.openai.com/s/ZWKjSihsCtmp9SQB5Y1dfoY6',
+  'https://labs.openai.com/s/a5BCImUscNYS3rBJyR81w0KZ'
+]
+12:58:06 PM  Creating task...
+Task created {
+  id: 'task-O4DWzJZeViurcQEs7w44CzQ5',
+  prompt: 'a bowl of soup that looks like a monster, knitted out of wool',
+  status: {}
+}
+Task succeeded { id: 'task-fnZl5Jrp6CuqXiPIEx4n8LI3', status: {} }
+Task pending { id: 'task-O4DWzJZeViurcQEs7w44CzQ5', status: {} }
+Generating 1 task every 5 seconds for 1 minute (12 tasks total): 1:05.003 (m:ss.mmm)
+      ✔ should create 1 task every 5 seconds for 1 minute (12 tasks total) (65004ms)
+
+
+  1 passing (1m)
+  2 pending
+
+-------------|---------|----------|---------|---------|--------------------------------------
+File         | % Stmts | % Branch | % Funcs | % Lines | Uncovered Line #s                    
+-------------|---------|----------|---------|---------|--------------------------------------
+All files    |   36.92 |    19.64 |   36.36 |   37.07 |                                      
+ Dalle2.ts   |   62.16 |    35.29 |      65 |   61.11 | 11,34-51,101,119-123,160-165,175-205 
+ S3.ts       |   57.14 |       60 |   28.57 |      55 | 11-12,26-42                          
+ config.ts   |     100 |       50 |     100 |     100 | 10-22                                
+ index.ts    |       0 |      100 |     100 |       0 | 5                                    
+ s3.ts       |       0 |        0 |       0 |       0 | 5-34                                 
+ sentry.ts   |   27.27 |    12.12 |      25 |   28.12 | 6,12-16,23-48                        
+ server.ts   |   19.86 |    13.46 |    12.5 |   20.86 | 6,54-356                             
+ supabase.ts |   83.33 |      100 |       0 |   83.33 | 6                                    
+ telegram.ts |      80 |      100 |   33.33 |   77.77 | 11-12                                
+-------------|---------|----------|---------|---------|--------------------------------------
+✨  Done in 67.68s.
