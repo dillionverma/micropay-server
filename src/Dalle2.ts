@@ -175,6 +175,7 @@ export class Dalle2 {
       task = response.data;
       console.log("Task created", {
         id: task.id,
+        prompt: prompt,
         status: task.status_information,
       });
       return task;
