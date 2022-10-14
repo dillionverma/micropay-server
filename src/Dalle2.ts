@@ -1,5 +1,6 @@
 import axios from "axios";
-
+import { assert } from "console";
+import fs from "fs";
 interface RequestBody {
   task_type: string;
   prompt: {
@@ -10,7 +11,7 @@ interface RequestBody {
 
 export interface ImageGenerations {
   object: string;
-  data: ImageData[];
+  data: Generation[];
 }
 
 export interface Task {
@@ -39,7 +40,7 @@ export interface CreditsResponse {
   object: string;
 }
 
-export interface ImageData {
+export interface Generation {
   id: string;
   object: string;
   created: number;
@@ -76,66 +77,196 @@ export class DalleError extends Error {
   }
 }
 
+/**
+ * Dalle2 is the class for interacting with the Dalle API
+ */
 export class Dalle2 {
   private bearerToken: string;
   private url: string;
+  private apiPrefix: string;
+  private headers: object;
+
   constructor(bearerToken: string) {
     this.bearerToken = bearerToken;
-    this.url = "https://labs.openai.com/api/labs";
+    this.url = "https://labs.openai.com";
+    this.apiPrefix = "api/labs";
+    this.headers = {
+      Authorization: `Bearer ${this.bearerToken}`,
+      "Content-Type": "application/json",
+    };
   }
 
-  async generate(prompt: string): Promise<string[]> {
-    const body: RequestBody = {
-      task_type: "text2im",
-      prompt: {
-        caption: prompt,
-        batch_size: 4,
-      },
-    };
+  /**
+   * Downloads the generated image
+   * @param generationId  the id of the generation
+   * @returns {Promise<Buffer>} the image buffer
+   */
+  async download(generationId: string): Promise<Buffer> {
+    const response = await axios(
+      `${this.url}/${this.apiPrefix}/generations/${generationId}/download`,
+      {
+        method: "GET",
+        headers: this.headers,
+        responseType: "arraybuffer",
+      }
+    );
+    return response.data;
+  }
 
-    let task: Task;
-    try {
-      const response = await axios(`${this.url}/tasks`, {
+  /**
+   * Downloads the generated image as a file
+   * @param generationId the id of the generation
+   * @param filename the filename to save the image to
+   */
+  async downloadFile(generationId: string, filename: string): Promise<void> {
+    const data = await this.download(generationId);
+    fs.writeFile(filename, data, "binary", (err) => {
+      if (!err) {
+        console.log(`${filename} created successfully!`);
+      } else {
+        console.log(err);
+      }
+    });
+  }
+
+  /**
+   * Creates public page to share the generated image
+   * @param generationId the id of the generation
+   * @returns {Promise<Generation>} the image data
+   */
+  async publish(generationId: string): Promise<string> {
+    const res = await axios(
+      `${this.url}/${this.apiPrefix}/generations/${generationId}/share`,
+      {
         method: "POST",
-        headers: {
-          Authorization: `Bearer ${this.bearerToken}`,
-          "Content-Type": "application/json",
-        },
-        data: body,
-      });
-      task = response.data as Task;
-    } catch (error) {
-      console.error("ERROR DURING GENERATION");
-      if (error.response) {
-        // console.log(error.response.data);
-        // console.log(error.response.status);
-        // console.log(error.response.statusText);
+        headers: this.headers,
+      }
+    );
 
+    const task: Generation = res.data;
+    assert(task.is_public === true); // Assert that the image is public
+
+    // Return the public url
+    const id = generationId.split("generation-")[1];
+    return `${this.url}/s/${id}`;
+  }
+
+  /**
+   * Creates a task to generate an image
+   * @param prompt the prompt to generate the image
+   * @returns {Promise<Task>} the task
+   */
+  async createTask(prompt: string): Promise<Task> {
+    let task: Task;
+
+    // 1. Create a task to generate the images
+    try {
+      const response = await axios(`${this.url}/${this.apiPrefix}/tasks`, {
+        method: "POST",
+        headers: this.headers,
+        data: {
+          task_type: "text2im",
+          prompt: {
+            caption: prompt,
+            batch_size: 4,
+          },
+        } as RequestBody,
+      });
+      task = response.data;
+      console.log("Task created", {
+        id: task.id,
+        status: task.status_information,
+      });
+      return task;
+    } catch (error) {
+      console.error("Error occured while creating task: ", error);
+      if (error.response) {
         throw new DalleError(
           error.response.data.error.message as DalleErrorResponse
         );
       }
       throw new DalleError("Unknown error during initial request");
     }
+  }
 
-    // console.log("task sent to OpenAI", task);
+  /**
+   * Gets a task by id
+   * @param taskId the id of the task
+   * @returns {Promise<Task>} the task
+   */
+  async getTask(taskId: string): Promise<Task> {
+    const response = await axios(
+      `${this.url}/${this.apiPrefix}/tasks/${taskId}`,
+      {
+        method: "GET",
+        headers: this.headers,
+      }
+    );
+    return response.data;
+  }
+
+  /**
+   * Gets the number of Dalle credits available
+   * @returns {Promise<CreditsResponse>} the credits response
+   */
+  async getCredits(): Promise<CreditsResponse> {
+    const response = await axios(
+      `${this.url}/${this.apiPrefix}/billing/credit_summary`,
+      {
+        method: "GET",
+        headers: this.headers,
+      }
+    );
+    return response.data;
+  }
+
+  /**
+   * Generates 4 images given a prompt
+   * @param prompt the prompt to generate the image
+   * @returns {Promise<string[]>} the generated images
+   */
+  public async generate(prompt: string): Promise<string[]> {
+    return this._generateAndPublish(prompt);
+  }
+
+  /**
+   * Generates and publicly shares the Dalle-2 images given a prompt
+   * @param prompt the prompt to generate the image
+   * @returns {Promise<string[]>} the generated images
+   */
+  private async _generateAndPublish(prompt: string): Promise<string[]> {
+    let task: Task;
+
+    // 1. Create a task to generate images
+    task = await this.createTask(prompt);
+
+    // 2. Get the task from the Dalle API (sanity check to ensure it's created)
     task = await this.getTask(task.id);
+
+    // 3. Wait for the task to complete
     return await new Promise(async (resolve, reject) => {
       try {
         const refreshIntervalId = setInterval(async () => {
           task = await this.getTask(task.id);
 
           switch (task.status) {
+            // 4. Once the task is complete, download the images
             case "succeeded":
               console.log("Task succeeded", {
                 id: task.id,
                 status: task.status_information,
               });
               clearInterval(refreshIntervalId);
-              const images = task.generations.data.map(
-                (image: ImageData) => image.generation.image_path
+
+              // 5. Publish all images
+              const images = await Promise.all(
+                task.generations.data.map(
+                  async (image: Generation) => await this.publish(image.id)
+                )
               );
               return resolve(images);
+
+            // If the task fails, throw an error
             case "rejected":
               console.log("Task rejected", {
                 id: task.id,
@@ -143,6 +274,8 @@ export class Dalle2 {
               });
               clearInterval(refreshIntervalId);
               return reject(new DalleError(task.status_information.message));
+
+            // If the task is pending, poll again
             case "pending":
               console.log("Task pending", {
                 id: task.id,
@@ -151,11 +284,8 @@ export class Dalle2 {
           }
         }, 3000);
       } catch (error) {
-        console.error("ERROR DURING TASK MONITORING");
+        console.error("Error occured while polling task: ", error);
         if (error.response) {
-          // console.log(error.response.data);
-          // console.log(error.response.status);
-          // console.log(error.response.statusText);
           return new DalleError(error.response.data);
         }
         return new DalleError("Unknown error task monitoring");
@@ -163,14 +293,34 @@ export class Dalle2 {
     });
   }
 
-  async getTask(taskId: string): Promise<Task> {
-    const response = await axios(`${this.url}/tasks/${taskId}`, {
-      headers: {
-        Authorization: `Bearer ${this.bearerToken}`,
-        "Content-Type": "application/json",
-      },
-    });
-    return response.data;
+  /**
+   * Checks if the Dalle API is up and running
+   * @returns {Promise<boolean>} true if the API is up and running
+   */
+  async isTokenValid(): Promise<boolean> {
+    try {
+      const response = await axios(
+        `${this.url}/${this.apiPrefix}/billing/credit_summary`,
+        {
+          method: "GET",
+          headers: this.headers,
+          validateStatus: () => true, // don't throw exception if status < 100 or status > 300 (default behavior).
+        }
+      );
+
+      if (response.data.error) {
+        console.error(response.data.error.message);
+        return false;
+      }
+      return true;
+    } catch (error) {
+      // Something wrong happened, probably not a valid token.
+      // if error.response exists, that implies this is an Axios Error
+      if (error.response) {
+        console.error(new DalleError(error.response.data.error)); // data.error is the structure of the response from OpenAI
+      }
+    }
+    return false;
   }
 
   // TODO: Can add back later.
@@ -188,41 +338,4 @@ export class Dalle2 {
   //     )
   //     .json();
   // }
-
-  async getCredits(): Promise<CreditsResponse> {
-    const response = await axios(`${this.url}/billing/credit_summary`, {
-      method: "GET",
-      headers: {
-        Authorization: `Bearer ${this.bearerToken}`,
-        "Content-Type": "application/json",
-      },
-    });
-    return response.data;
-  }
-
-  async isTokenValid(): Promise<boolean> {
-    try {
-      const response = await axios(`${this.url}/billing/credit_summary`, {
-        method: "GET",
-        headers: {
-          Authorization: `Bearer ${this.bearerToken}`,
-          "Content-Type": "application/json",
-        },
-        validateStatus: () => true, // don't throw exception if status < 100 or status > 300 (default behavior).
-      });
-
-      if (response.data.error) {
-        console.error(response.data.error.message);
-        return false;
-      }
-      return true;
-    } catch (error) {
-      // Something wrong happened, probably not a valid token.
-      // if error.response exists, that implies this is an Axios Error
-      if (error.response) {
-        console.error(new DalleError(error.response.data.error)); // data.error is the structure of the response from OpenAI
-      }
-    }
-    return false;
-  }
 }

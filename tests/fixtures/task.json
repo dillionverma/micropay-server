@@ -1,0 +1,72 @@
+{
+  "object": "task",
+  "id": "task-6qm1cDOAWpQpjGZI3WZWVhlx",
+  "created": 1665690582,
+  "task_type": "text2im",
+  "status": "succeeded",
+  "status_information": {},
+  "prompt_id": "prompt-CsVzABotYhqcb2vIgxxTUkyo",
+  "generations": {
+    "object": "list",
+    "data": [
+      {
+        "id": "generation-UfWSPAxjEZefeBW4Ip4q2p3q",
+        "object": "generation",
+        "created": 1665690589,
+        "generation_type": "ImageGeneration",
+        "generation": {
+          "image_path": "https://openailabsprodscus.blob.core.windows.net/private/user-ji6LpnyrRSo6E6wIy5iiJdCa/generations/generation-UfWSPAxjEZefeBW4Ip4q2p3q/image.webp?st=2022-10-13T18%3A50%3A54Z&se=2022-10-13T20%3A48%3A54Z&sp=r&sv=2021-08-06&sr=b&rscd=inline&rsct=image/webp&skoid=15f0b47b-a152-4599-9e98-9cb4a58269f8&sktid=a48cca56-e6da-484e-a814-9c849652bcb3&skt=2022-10-13T17%3A09%3A33Z&ske=2022-10-20T17%3A09%3A33Z&sks=b&skv=2021-08-06&sig=G2s8/vnAm0J/teIySF%2B9E%2BzrjlGJQR7mwZwfUiZR4ZY%3D"
+        },
+        "task_id": "task-6qm1cDOAWpQpjGZI3WZWVhlx",
+        "prompt_id": "prompt-CsVzABotYhqcb2vIgxxTUkyo",
+        "is_public": false
+      },
+      {
+        "id": "generation-TE73Iqr9nkVKHHEFulc4DcJP",
+        "object": "generation",
+        "created": 1665690591,
+        "generation_type": "ImageGeneration",
+        "generation": {
+          "image_path": "https://openailabsprodscus.blob.core.windows.net/private/user-ji6LpnyrRSo6E6wIy5iiJdCa/generations/generation-TE73Iqr9nkVKHHEFulc4DcJP/image.webp?st=2022-10-13T18%3A50%3A54Z&se=2022-10-13T20%3A48%3A54Z&sp=r&sv=2021-08-06&sr=b&rscd=inline&rsct=image/webp&skoid=15f0b47b-a152-4599-9e98-9cb4a58269f8&sktid=a48cca56-e6da-484e-a814-9c849652bcb3&skt=2022-10-13T17%3A09%3A33Z&ske=2022-10-20T17%3A09%3A33Z&sks=b&skv=2021-08-06&sig=a/k/AGD%2BOFdw1agg3x4DpKZm5LcubZ9bby4p2etPYbQ%3D"
+        },
+        "task_id": "task-6qm1cDOAWpQpjGZI3WZWVhlx",
+        "prompt_id": "prompt-CsVzABotYhqcb2vIgxxTUkyo",
+        "is_public": false
+      },
+      {
+        "id": "generation-k0CEJsXqrGs0ibka4O1SyKay",
+        "object": "generation",
+        "created": 1665690589,
+        "generation_type": "ImageGeneration",
+        "generation": {
+          "image_path": "https://openailabsprodscus.blob.core.windows.net/private/user-ji6LpnyrRSo6E6wIy5iiJdCa/generations/generation-k0CEJsXqrGs0ibka4O1SyKay/image.webp?st=2022-10-13T18%3A50%3A54Z&se=2022-10-13T20%3A48%3A54Z&sp=r&sv=2021-08-06&sr=b&rscd=inline&rsct=image/webp&skoid=15f0b47b-a152-4599-9e98-9cb4a58269f8&sktid=a48cca56-e6da-484e-a814-9c849652bcb3&skt=2022-10-13T17%3A09%3A33Z&ske=2022-10-20T17%3A09%3A33Z&sks=b&skv=2021-08-06&sig=IE2kdRvZyuEFbyBuy%2BRmo2FpE0RwsZ1xs21HN66x1zM%3D"
+        },
+        "task_id": "task-6qm1cDOAWpQpjGZI3WZWVhlx",
+        "prompt_id": "prompt-CsVzABotYhqcb2vIgxxTUkyo",
+        "is_public": false
+      },
+      {
+        "id": "generation-FRT4K8uhuqc14A7GfKWZ3hPs",
+        "object": "generation",
+        "created": 1665690591,
+        "generation_type": "ImageGeneration",
+        "generation": {
+          "image_path": "https://openailabsprodscus.blob.core.windows.net/private/user-ji6LpnyrRSo6E6wIy5iiJdCa/generations/generation-FRT4K8uhuqc14A7GfKWZ3hPs/image.webp?st=2022-10-13T18%3A50%3A54Z&se=2022-10-13T20%3A48%3A54Z&sp=r&sv=2021-08-06&sr=b&rscd=inline&rsct=image/webp&skoid=15f0b47b-a152-4599-9e98-9cb4a58269f8&sktid=a48cca56-e6da-484e-a814-9c849652bcb3&skt=2022-10-13T17%3A09%3A33Z&ske=2022-10-20T17%3A09%3A33Z&sks=b&skv=2021-08-06&sig=6unt6vj1Db//Smht4Xw%2BKYpZ2p9BX%2BkfI14/lPbQ9sM%3D"
+        },
+        "task_id": "task-6qm1cDOAWpQpjGZI3WZWVhlx",
+        "prompt_id": "prompt-CsVzABotYhqcb2vIgxxTUkyo",
+        "is_public": false
+      }
+    ]
+  },
+  "prompt": {
+    "id": "prompt-CsVzABotYhqcb2vIgxxTUkyo",
+    "object": "prompt",
+    "created": 1665690582,
+    "prompt_type": "CaptionPrompt",
+    "prompt": {
+      "caption": "italian man with a mustache dressed as mario wearing a solid red mario hat, crawling on the ground, licking a red mushroom with white spots, in a forest, photography, 80mm lens, f1.4"
+    },
+    "parent_generation_id": null
+  }
+}

@@ -1,5 +1,6 @@
-interface Config {
+export interface Config {
   host: string;
+  port: string | number;
   dalleApiKey: string;
   supabaseUrl: string;
   supabaseApiKey: string;
@@ -12,12 +13,15 @@ interface Config {
   awsAccessKey: string;
   awsSecretKey: string;
   adminMacaroon: string;
+  readOnlyMacaroon: string;
+  invoiceMacaroon: string;
   tlsCert: string;
   mockImages: string;
 }
 
-const config: Config = {
+export const config: Config = {
   host: process.env.HOST,
+  port: process.env.PORT || 3002,
   dalleApiKey: process.env.DALLE_API_KEY,
   supabaseUrl: process.env.SUPABASE_URL,
   supabaseApiKey: process.env.SUPABASE_API_KEY,
@@ -29,9 +33,10 @@ const config: Config = {
   sentryDsn: process.env.SENTRY_DSN,
   awsAccessKey: process.env.AWS_ACCESS_KEY,
   awsSecretKey: process.env.AWS_SECRET_KEY,
-  adminMacaroon: process.env.ADMIN_MACAROON,
+  adminMacaroon:
+    process.env.NODE_ENV === "production" ? null : process.env.ADMIN_MACAROON, // safety check. No admin macaroon in production
+  readOnlyMacaroon: process.env.READ_ONLY_MACAROON,
+  invoiceMacaroon: process.env.INVOICE_MACAROON,
   tlsCert: process.env.TLS_CERT,
   mockImages: process.env.MOCK_IMAGES,
 };
-
-export default config;
