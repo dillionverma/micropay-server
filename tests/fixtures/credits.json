@@ -1,0 +1,9 @@
+{
+  "aggregate_credits": 697,
+  "next_grant_ts": 1667159385,
+  "breakdown": {
+    "free": 0,
+    "paid_dalle_15_115": 697
+  },
+  "object": "credit_summary"
+}

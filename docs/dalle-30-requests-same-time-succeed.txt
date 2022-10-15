@@ -1,0 +1,315 @@
+    ~/s/d/mi/lightning-dalle2-server    dillion/micro-92-set-up-test-framework *2 !2  yarn test                             ✔ 
+yarn run v1.22.18
+$ NODE_ENV=test nyc mocha -r dotenv-safe/config
+
+
+  Dalle-2 API
+    investigate rate limit for task creation
+Task created {
+  id: 'task-9yhdoBJYhAYD8ekoOBegSeOz',
+  prompt: 'a painting of a fox in the style of Starry Night',
+  status: {}
+}
+Task created {
+  id: 'task-zorSgO0nBnYVYx3DJQNSWwrc',
+  prompt: 'an expressive oil painting of a basketball player dunking, depicted as an explosion of a nebula',
+  status: {}
+}
+Task created {
+  id: 'task-pR7JQmUIO2CVKo0dypKKpLSI',
+  prompt: 'a bowl of soup that looks like a monster, knitted out of wool',
+  status: {}
+}
+Task created {
+  id: 'task-Vl4zHVVvTLMwFVpEZAocSM6u',
+  prompt: 'crayon drawing of several cute colorful monsters with ice cream cone bodies on dark blue paper',
+  status: {}
+}
+Task created {
+  id: 'task-lnttpmg3foGlNIqbhD08QBBy',
+  prompt: 'an astronaut lounging in a tropical resort in space, pixel art',
+  status: {}
+}
+Task created {
+  id: 'task-lXvBF4cHUC3htFMRvfZ2xCuK',
+  prompt: 'a bowl of soup that is also a portal to another dimension, digital art',
+  status: {}
+}
+Task created {
+  id: 'task-PrC58ThIc3fhGGqORdT7NNot',
+  prompt: '"a sea otter with a pearl earring" by Johannes Vermeer',
+  status: {}
+}
+Task created {
+  id: 'task-WF03C9Sn7o9r3wY6lo41bUL7',
+  prompt: 'an astronaut playing basketball with cats in space, digital art',
+  status: {}
+}
+Task created {
+  id: 'task-PfZwzvolnkxmW2zJybBG4wia',
+  prompt: 'a fortune-telling shiba inu reading your fate in a giant hamburger, digital art',
+  status: {}
+}
+Task created {
+  id: 'task-GovVse6PlSgAR86ikvb1QIIK',
+  prompt: 'a stern-looking owl dressed as a librarian, digital art',
+  status: {}
+}
+Task created {
+  id: 'task-W9w8I59IMxP7ZRs7vtJG4YjX',
+  prompt: 'an oil painting by Matisse of a humanoid robot playing chess',
+  status: {}
+}
+Task created {
+  id: 'task-AmZtYgttmeVTrjPd2IAy2f7T',
+  prompt: 'a stained glass window depicting a robot',
+  status: {}
+}
+Task created {
+  id: 'task-hXm3tF7PXSQORQ7aySIyAJnm',
+  prompt: 'teddy bears shopping for groceries, one-line drawing',
+  status: {}
+}
+Task created {
+  id: 'task-QCzvqgQW9CzskIMFE5qKwcHs',
+  prompt: 'a sunlit indoor lounge area with a pool with clear water and another pool with translucent pastel pink water, next to a big window, digital art',
+  status: {}
+}
+Task created {
+  id: 'task-bTcCVuRTIZ8IjfMIinJ8O7Bs',
+  prompt: "a macro 35mm photograph of two mice in Hawaii, they're each wearing tiny swimsuits and are carrying tiny surf boards, digital art",
+  status: {}
+}
+Task created {
+  id: 'task-MgPvZoHvLbp56ICtJSrMsxy8',
+  prompt: 'an oil pastel drawing of an annoyed cat in a spaceship',
+  status: {}
+}
+Task created {
+  id: 'task-GIFzwsOS414zGGPWBPwLaVvV',
+  prompt: '3D render of a cute tropical fish in an aquarium on a dark blue background, digital art',
+  status: {}
+}
+Task created {
+  id: 'task-5dcvakTkKiSmWJFzFewxlNyy',
+  prompt: 'a pencil and watercolor drawing of a bright city in the future with flying cars',
+  status: {}
+}
+Task created {
+  id: 'task-BOTdl5iaecaNM6xnhnpWWb9S',
+  prompt: 'photograph of an astronaut riding a horse',
+  status: {}
+}
+Task pending { id: 'task-zorSgO0nBnYVYx3DJQNSWwrc', status: {} }
+Task pending { id: 'task-9yhdoBJYhAYD8ekoOBegSeOz', status: {} }
+Task pending { id: 'task-lnttpmg3foGlNIqbhD08QBBy', status: {} }
+Task pending { id: 'task-pR7JQmUIO2CVKo0dypKKpLSI', status: {} }
+Task pending { id: 'task-Vl4zHVVvTLMwFVpEZAocSM6u', status: {} }
+Task pending { id: 'task-PrC58ThIc3fhGGqORdT7NNot', status: {} }
+Task pending { id: 'task-lXvBF4cHUC3htFMRvfZ2xCuK', status: {} }
+Task pending { id: 'task-PfZwzvolnkxmW2zJybBG4wia', status: {} }
+Task pending { id: 'task-WF03C9Sn7o9r3wY6lo41bUL7', status: {} }
+Task pending { id: 'task-GovVse6PlSgAR86ikvb1QIIK', status: {} }
+Task pending { id: 'task-W9w8I59IMxP7ZRs7vtJG4YjX', status: {} }
+Task pending { id: 'task-AmZtYgttmeVTrjPd2IAy2f7T', status: {} }
+Task pending { id: 'task-GIFzwsOS414zGGPWBPwLaVvV', status: {} }
+Task pending { id: 'task-bTcCVuRTIZ8IjfMIinJ8O7Bs', status: {} }
+Task pending { id: 'task-MgPvZoHvLbp56ICtJSrMsxy8', status: {} }
+Task pending { id: 'task-5dcvakTkKiSmWJFzFewxlNyy', status: {} }
+Task pending { id: 'task-hXm3tF7PXSQORQ7aySIyAJnm', status: {} }
+Task pending { id: 'task-QCzvqgQW9CzskIMFE5qKwcHs', status: {} }
+Task pending { id: 'task-BOTdl5iaecaNM6xnhnpWWb9S', status: {} }
+Task pending { id: 'task-9yhdoBJYhAYD8ekoOBegSeOz', status: {} }
+Task pending { id: 'task-zorSgO0nBnYVYx3DJQNSWwrc', status: {} }
+Task pending { id: 'task-PrC58ThIc3fhGGqORdT7NNot', status: {} }
+Task pending { id: 'task-lnttpmg3foGlNIqbhD08QBBy', status: {} }
+Task pending { id: 'task-pR7JQmUIO2CVKo0dypKKpLSI', status: {} }
+Task pending { id: 'task-lXvBF4cHUC3htFMRvfZ2xCuK', status: {} }
+Task pending { id: 'task-Vl4zHVVvTLMwFVpEZAocSM6u', status: {} }
+Task pending { id: 'task-GovVse6PlSgAR86ikvb1QIIK', status: {} }
+Task pending { id: 'task-WF03C9Sn7o9r3wY6lo41bUL7', status: {} }
+Task pending { id: 'task-W9w8I59IMxP7ZRs7vtJG4YjX', status: {} }
+Task pending { id: 'task-MgPvZoHvLbp56ICtJSrMsxy8', status: {} }
+Task pending { id: 'task-PfZwzvolnkxmW2zJybBG4wia', status: {} }
+Task pending { id: 'task-bTcCVuRTIZ8IjfMIinJ8O7Bs', status: {} }
+Task pending { id: 'task-QCzvqgQW9CzskIMFE5qKwcHs', status: {} }
+Task pending { id: 'task-AmZtYgttmeVTrjPd2IAy2f7T', status: {} }
+Task pending { id: 'task-5dcvakTkKiSmWJFzFewxlNyy', status: {} }
+Task pending { id: 'task-GIFzwsOS414zGGPWBPwLaVvV', status: {} }
+Task pending { id: 'task-hXm3tF7PXSQORQ7aySIyAJnm', status: {} }
+Task pending { id: 'task-BOTdl5iaecaNM6xnhnpWWb9S', status: {} }
+Task pending { id: 'task-9yhdoBJYhAYD8ekoOBegSeOz', status: {} }
+Task pending { id: 'task-zorSgO0nBnYVYx3DJQNSWwrc', status: {} }
+Task pending { id: 'task-lnttpmg3foGlNIqbhD08QBBy', status: {} }
+Task pending { id: 'task-pR7JQmUIO2CVKo0dypKKpLSI', status: {} }
+Task pending { id: 'task-WF03C9Sn7o9r3wY6lo41bUL7', status: {} }
+Task pending { id: 'task-lXvBF4cHUC3htFMRvfZ2xCuK', status: {} }
+Task pending { id: 'task-PfZwzvolnkxmW2zJybBG4wia', status: {} }
+Task pending { id: 'task-PrC58ThIc3fhGGqORdT7NNot', status: {} }
+Task pending { id: 'task-Vl4zHVVvTLMwFVpEZAocSM6u', status: {} }
+Task pending { id: 'task-W9w8I59IMxP7ZRs7vtJG4YjX', status: {} }
+Task pending { id: 'task-GovVse6PlSgAR86ikvb1QIIK', status: {} }
+Task pending { id: 'task-5dcvakTkKiSmWJFzFewxlNyy', status: {} }
+Task pending { id: 'task-QCzvqgQW9CzskIMFE5qKwcHs', status: {} }
+Task pending { id: 'task-hXm3tF7PXSQORQ7aySIyAJnm', status: {} }
+Task pending { id: 'task-AmZtYgttmeVTrjPd2IAy2f7T', status: {} }
+Task pending { id: 'task-MgPvZoHvLbp56ICtJSrMsxy8', status: {} }
+Task pending { id: 'task-bTcCVuRTIZ8IjfMIinJ8O7Bs', status: {} }
+Task pending { id: 'task-GIFzwsOS414zGGPWBPwLaVvV', status: {} }
+Task pending { id: 'task-BOTdl5iaecaNM6xnhnpWWb9S', status: {} }
+Task succeeded { id: 'task-lnttpmg3foGlNIqbhD08QBBy', status: {} }
+Task succeeded { id: 'task-zorSgO0nBnYVYx3DJQNSWwrc', status: {} }
+Task succeeded { id: 'task-lXvBF4cHUC3htFMRvfZ2xCuK', status: {} }
+Task succeeded { id: 'task-Vl4zHVVvTLMwFVpEZAocSM6u', status: {} }
+Task succeeded { id: 'task-PrC58ThIc3fhGGqORdT7NNot', status: {} }
+Task succeeded { id: 'task-WF03C9Sn7o9r3wY6lo41bUL7', status: {} }
+Task succeeded { id: 'task-GovVse6PlSgAR86ikvb1QIIK', status: {} }
+Task succeeded { id: 'task-pR7JQmUIO2CVKo0dypKKpLSI', status: {} }
+Task succeeded { id: 'task-GIFzwsOS414zGGPWBPwLaVvV', status: {} }
+Task succeeded { id: 'task-AmZtYgttmeVTrjPd2IAy2f7T', status: {} }
+Task succeeded { id: 'task-MgPvZoHvLbp56ICtJSrMsxy8', status: {} }
+Task succeeded { id: 'task-PfZwzvolnkxmW2zJybBG4wia', status: {} }
+Task succeeded { id: 'task-hXm3tF7PXSQORQ7aySIyAJnm', status: {} }
+Task succeeded { id: 'task-9yhdoBJYhAYD8ekoOBegSeOz', status: {} }
+Task succeeded { id: 'task-W9w8I59IMxP7ZRs7vtJG4YjX', status: {} }
+Task succeeded { id: 'task-bTcCVuRTIZ8IjfMIinJ8O7Bs', status: {} }
+Task succeeded { id: 'task-5dcvakTkKiSmWJFzFewxlNyy', status: {} }
+Task succeeded { id: 'task-QCzvqgQW9CzskIMFE5qKwcHs', status: {} }
+Task succeeded { id: 'task-BOTdl5iaecaNM6xnhnpWWb9S', status: {} }
+[
+  [
+    'https://labs.openai.com/s/gNsqaQzHV2DNq505qbanEaaX',
+    'https://labs.openai.com/s/mTztRMNwQKJ9SkV0mtZGbpg1',
+    'https://labs.openai.com/s/45uYfGIoR1LCNphYktnqu1It',
+    'https://labs.openai.com/s/wmFWdblzEQsYxUw3kme6uVfS'
+  ],
+  [
+    'https://labs.openai.com/s/3ScUp10re7KCYpLWIrSGJp9P',
+    'https://labs.openai.com/s/Bm0NNx2dNFMjQLYRSBu4dh0V',
+    'https://labs.openai.com/s/pVHkkI8NeVmJNpjk696Vcdbk',
+    'https://labs.openai.com/s/zPB0LYMfpuf9Iqb1mcFHTWDm'
+  ],
+  [
+    'https://labs.openai.com/s/j6SxYt6DCTgpBfjiWbvwtElx',
+    'https://labs.openai.com/s/QAWPKe0jsNeNbs571cDJqwws',
+    'https://labs.openai.com/s/QZhfDyh9miWlWBgTpb8bR0yn',
+    'https://labs.openai.com/s/RRPqfvwDPygFfomF7heFYoNJ'
+  ],
+  [
+    'https://labs.openai.com/s/gvDWIhb9vJLxWUtbouvUltsd',
+    'https://labs.openai.com/s/qKignRGDu0KIUr4cClp5IcC2',
+    'https://labs.openai.com/s/o0o2arW0hFOPhpwGe1CyT9cR',
+    'https://labs.openai.com/s/sjFRb8fMJTziDyPGngE6c1ou'
+  ],
+  [
+    'https://labs.openai.com/s/svMhcuwO41YMgTVbuEK4aV1G',
+    'https://labs.openai.com/s/CJqUdVHfVxDMZBZ8rMcH240o',
+    'https://labs.openai.com/s/RROvOaQrL0xU6hqlLPpdni62',
+    'https://labs.openai.com/s/p7HUfFZp0SPHgQ35Rvzu8YsJ'
+  ],
+  [
+    'https://labs.openai.com/s/EkYErfNTwoWzYM8uSu75m7U3',
+    'https://labs.openai.com/s/nr0MbFovkXQyk4Ia0usjGqft',
+    'https://labs.openai.com/s/711GYzEUog6SZYSgzwZOz0jN',
+    'https://labs.openai.com/s/uozDmQCdEh2WOkkSBJF525II'
+  ],
+  [
+    'https://labs.openai.com/s/NMJDjLYPGIZNz4izTeJzkWMT',
+    'https://labs.openai.com/s/TIk47MsPxuApxld8c2jqmLWQ',
+    'https://labs.openai.com/s/Mm0p2h3HtE4ste4vkptIMoGX',
+    'https://labs.openai.com/s/7SvjXgb52mSue8Y9mxZ9Mg5v'
+  ],
+  [
+    'https://labs.openai.com/s/fjsboJeXrzSwVHgQfyBc6iYP',
+    'https://labs.openai.com/s/r4aEMmLYNbBbfMmdsUGhT964',
+    'https://labs.openai.com/s/kJgYR60gd868v5bGWDb16egm',
+    'https://labs.openai.com/s/o09jV9UILiXfZGqwcwmwXPkK'
+  ],
+  [
+    'https://labs.openai.com/s/wHQrUrfUg4fbO2EaTlihoh9h',
+    'https://labs.openai.com/s/syGNVkj8dHK1DOX9o3oJWSWT',
+    'https://labs.openai.com/s/AcqvMilaHITOjy0Nxast5eK3',
+    'https://labs.openai.com/s/AjoQfrIndWhkdso1TOXXqeNO'
+  ],
+  [
+    'https://labs.openai.com/s/kUeYams34gkDdggqn1hsMSTC',
+    'https://labs.openai.com/s/Z1MVv5hikIdeKDLL1A8HvrFf',
+    'https://labs.openai.com/s/vDBSpwkSrW2yt1KeuOhtAbUU',
+    'https://labs.openai.com/s/dROwE1HbsPis4mpdMQL5QBzY'
+  ],
+  [
+    'https://labs.openai.com/s/DAJA6iobxDXkEQF11S7Y8Q34',
+    'https://labs.openai.com/s/1RdJfeVcn0aINvN5Rsg58KxK',
+    'https://labs.openai.com/s/nMADKHewIyle8cVfag6JJiRz',
+    'https://labs.openai.com/s/mOHgqihirZABqYbx8T5e1auI'
+  ],
+  [
+    'https://labs.openai.com/s/TT2efmsynEesCcbI3PlLpxnt',
+    'https://labs.openai.com/s/IukMqVLDWE8ET7GAb955bKFN',
+    'https://labs.openai.com/s/jIjfDr5lj6MKEMyPcEz0cyan',
+    'https://labs.openai.com/s/HiIODHSh5SzWGKGcJjLmhOB0'
+  ],
+  [
+    'https://labs.openai.com/s/kaA4VaBzNxzZj4BOqz5w3LuX',
+    'https://labs.openai.com/s/fB2xdnQ5NRzVQL9c7ZdZwYxy',
+    'https://labs.openai.com/s/eHZmQfPvt9Y933lHv74NjdM4',
+    'https://labs.openai.com/s/Fzxi5P2HU5gA23AbPfWUkdiC'
+  ],
+  [
+    'https://labs.openai.com/s/BW9S28JNAKHHpFGMawbr4kcl',
+    'https://labs.openai.com/s/KOIs9OwfTjSKOYr5KS5D2cuK',
+    'https://labs.openai.com/s/1TWF59qLBOnZYfWtlXjg28m8',
+    'https://labs.openai.com/s/FtnpMcbiKytJqzKnkFS87mCl'
+  ],
+  [
+    'https://labs.openai.com/s/pHrU8ofWOK9pOClN3BAT6zH5',
+    'https://labs.openai.com/s/IO3Sq9mlvvnTkxaJbchYeIb9',
+    'https://labs.openai.com/s/KRumh6zN1ZKGfMapIlo9QQ9N',
+    'https://labs.openai.com/s/BuLxPLf1tJnC4KDWWDQV29A4'
+  ],
+  [
+    'https://labs.openai.com/s/QRcn7fxHCTXAX7Cn38lfW4bV',
+    'https://labs.openai.com/s/EQEym5QeXHHUv7z0sTHS32RW',
+    'https://labs.openai.com/s/9b2QTeUqFODEBAn7KGGR4gDi',
+    'https://labs.openai.com/s/gORrAs4MLc12uh0pyaFH5REY'
+  ],
+  [
+    'https://labs.openai.com/s/j95P1Okbt5pw11Sq7q84Y0h8',
+    'https://labs.openai.com/s/AbHGIaoqqAjiOK1ok3BOrKWs',
+    'https://labs.openai.com/s/vpmZJYoNMl6aWSaPMsxdDVoR',
+    'https://labs.openai.com/s/d4Cr7k6MiGXDCvTnKCHd4BSx'
+  ],
+  [
+    'https://labs.openai.com/s/yARjULqyHmeKi16zuz5mJOzH',
+    'https://labs.openai.com/s/lPciwJjmYaAhL1u1aDRMCr3c',
+    'https://labs.openai.com/s/Q3ZY4yDS7DcfLpr99JffVp11',
+    'https://labs.openai.com/s/ieqYpXLFTLw1ktHE3LPb3pKX'
+  ],
+  [
+    'https://labs.openai.com/s/9XVYucqAEqeJuXxgseoqVcfh',
+    'https://labs.openai.com/s/KxuwhmTzcYIi7hgQSxbNCbr9',
+    'https://labs.openai.com/s/Bx3ujLm9t9aMiysxxSfsVbEO',
+    'https://labs.openai.com/s/rzWDisAkqcyHaxWJ4s76NjpU'
+  ]
+]
+Generating 30 tasks at the same time: 17.235s
+      ✔ should create 30 tasks at the same time to see if they succeed (17235ms)
+
+
+  1 passing (17s)
+
+-------------|---------|----------|---------|---------|-----------------------------------------------
+File         | % Stmts | % Branch | % Funcs | % Lines | Uncovered Line #s                             
+-------------|---------|----------|---------|---------|-----------------------------------------------
+All files    |   35.29 |    18.75 |   34.54 |   35.37 |                                               
+ Dalle2.ts   |    55.4 |    29.41 |      60 |   54.16 | 11,24-25,34-51,97-101,119-123,160-165,175-205 
+ S3.ts       |   57.14 |       60 |   28.57 |      55 | 11-12,26-42                                   
+ config.ts   |     100 |       50 |     100 |     100 | 10-22                                         
+ index.ts    |       0 |      100 |     100 |       0 | 5                                             
+ s3.ts       |       0 |        0 |       0 |       0 | 5-34                                          
+ sentry.ts   |   27.27 |    12.12 |      25 |   28.12 | 6,12-16,23-48                                 
+ server.ts   |   19.86 |    13.46 |    12.5 |   20.86 | 6,54-356                                      
+ supabase.ts |   83.33 |      100 |       0 |   83.33 | 6                                             
+ telegram.ts |      80 |      100 |   33.33 |   77.77 | 11-12                                         
+-------------|---------|----------|---------|---------|-----------------------------------------------
+✨  Done in 19.67s.
