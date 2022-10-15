@@ -18,8 +18,19 @@ jobs:
         run: yarn install
 
       - run: yarn test
+        env:
+          HOST: ${{ secrets.HOST }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_API_KEY: ${{ secrets.SUPABASE_API_KEY }}
+          READ_ONLY_MACAROON: ${{ secrets.READ_ONLY_MACAROON }}
+          INVOICE_MACAROON: ${{ secrets.INVOICE_MACAROON }}
+          ADMIN_MACAROON: ${{ secrets.ADMIN_MACAROON }}
+          DALLE_API_KEY: ${{ secrets.DALLE_API_KEY }}
 
       - name: Get test coverage
-        uses: coverallsapp/github-action@master
+        uses: codecov/codecov-action@v3
         with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.CODECOV_TOKEN }} # not required for public repos
+          directory: ./coverage
+          fail_ci_if_error: true # optional (default = false)
+          verbose: true # optional (default = false)

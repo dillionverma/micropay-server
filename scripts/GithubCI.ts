@@ -1,6 +1,6 @@
 import { exit } from "process";
 import { ENV_KEYS } from "../src/config";
-import Github from "../src/Github";
+import Github from "../src/services/github";
 
 const envFile = ".env.test";
 const owner = "dillionverma";

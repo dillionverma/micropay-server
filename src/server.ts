@@ -2,11 +2,11 @@ import cors from "cors";
 import express, { Request } from "express";
 import lnService from "lightning";
 import { Config, config } from "./config";
-import { Dalle2 } from "./Dalle2";
-import { BUCKET_NAME, uploadFileToS3 } from "./S3";
+import { BUCKET_NAME, uploadFileToS3 } from "./s3";
 import Sentry from "./sentry";
+import { Dalle2 } from "./services/dalle2";
+import { TelegramBot } from "./services/telegramBot";
 import { Order, supabase } from "./supabase";
-import { groupTelegram, personalTelegram } from "./telegram";
 
 const { invoiceMacaroon: macaroon, host } = config;
 const socket = `${host}:10009`;
@@ -16,6 +16,13 @@ const { lnd } = lnService.authenticatedLndGrpc({
 });
 
 const dalle2 = new Dalle2(config.dalleApiKey);
+
+const telegramBot = new TelegramBot(
+  config.personalTelegramToken,
+  config.groupTelegramToken,
+  [config.telegramUserId, config.telegramUserIdHaseab],
+  config.telegramGroupId
+);
 
 const DEFAULT_PRICE = process.env.NODE_ENV === "production" ? 1000 : 50;
 
@@ -74,8 +81,7 @@ export const init = (config: Config) => {
           ? "Production: OpenAI Token expired"
           : "Dev: Open AI Token expired";
       if (!isValid) {
-        await personalTelegram.sendMessage(config.telegramUserId, text);
-        await personalTelegram.sendMessage(config.telegramUserIdHaseab, text);
+        await telegramBot.sendMessageToAdmins(text);
         return res.status(500).send({ error: "Dalle token has expired" });
       }
 
@@ -105,8 +111,7 @@ export const init = (config: Config) => {
       Prompt: ${prompt}
       `;
 
-        await personalTelegram.sendMessage(config.telegramUserId, text);
-        await personalTelegram.sendMessage(config.telegramUserIdHaseab, text);
+        await telegramBot.sendMessageToAdmins(text);
         if (error) return res.status(500).send({ error: error.message });
         console.log("Invoice generated: ", invoice);
         res.status(200).send(invoice);
@@ -336,40 +341,9 @@ export const init = (config: Config) => {
           `;
 
             try {
-              await personalTelegram.sendMediaGroup(
-                config.telegramUserId,
-                images.map((img) => ({
-                  type: "photo",
-                  media: img,
-                  caption: prompt,
-                }))
-              );
-              await personalTelegram.sendMediaGroup(
-                config.telegramUserId,
-                images.map((img) => ({
-                  type: "photo",
-                  media: img,
-                  caption: prompt,
-                }))
-              );
-
-              // Only send to group telegram if not in dev
-              if (process.env.NODE_ENV === "production") {
-                await groupTelegram.sendMediaGroup(
-                  config.telegramGroupId,
-                  images.map((img, i) => ({
-                    type: "photo",
-                    media: img,
-                    caption: i === 0 ? prompt : "",
-                  }))
-                );
-              }
-
-              await personalTelegram.sendMessage(config.telegramUserId, text);
-              await personalTelegram.sendMessage(
-                config.telegramUserIdHaseab,
-                text
-              );
+              await telegramBot.sendImagesToAdmins(images, prompt);
+              await telegramBot.sendImagesToGroup(images, prompt);
+              await telegramBot.sendMessageToAdmins(text);
             } catch (e) {
               console.error("Posting to telegram failed");
               console.error(e);

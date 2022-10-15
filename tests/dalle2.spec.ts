@@ -4,7 +4,7 @@ import chaiFiles from "chai-files";
 import fs from "fs";
 import { createRequire } from "module";
 import { config } from "../src/config";
-import { Dalle2, Task } from "../src/Dalle2";
+import { Dalle2, Task } from "../src/services/dalle2";
 import { getNRandomElements, getRandomElement, sleep } from "../src/utils";
 const require = createRequire(import.meta.url);
 

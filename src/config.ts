@@ -28,6 +28,7 @@ export interface Config {
   tlsCert: string;
   mockImages: string;
   tokenGithub: string;
+  codecovToken: string;
 }
 
 export enum ENV_KEYS {
@@ -50,6 +51,7 @@ export enum ENV_KEYS {
   TLS_CERT = "tlsCert",
   MOCK_IMAGES = "mockImages",
   TOKEN_GITHUB = "tokenGithub",
+  CODECOV_TOKEN = "codecovToken",
 }
 
 export const config: Config = {
@@ -74,4 +76,6 @@ export const config: Config = {
   [ENV_KEYS.MOCK_IMAGES]: process.env.MOCK_IMAGES,
   [ENV_KEYS.TOKEN_GITHUB]:
     process.env.NODE_ENV === "production" ? null : process.env.TOKEN_GITHUB,
+  [ENV_KEYS.CODECOV_TOKEN]:
+    process.env.NODE_ENV === "production" ? null : process.env.CODECOV_TOKEN,
 };
