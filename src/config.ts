@@ -1,10 +1,12 @@
 import { createRequire } from "module";
 const requireMod = createRequire(import.meta.url);
 
-requireMod("dotenv-safe").config({
-  path: `.env.${process.env.NODE_ENV}`,
-  allowEmptyValues: true,
-});
+if (!process.env.CI) {
+  requireMod("dotenv-safe").config({
+    path: `.env.${process.env.NODE_ENV}`,
+    allowEmptyValues: true,
+  });
+}
 
 export interface Config {
   host: string;
