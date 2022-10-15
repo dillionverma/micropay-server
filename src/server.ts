@@ -208,19 +208,26 @@ export const init = (config: Config) => {
       res
     ) => {
       const { invoiceId, refundInvoice } = req.body;
-      // Update order to indicate that images have been generated
-      const { data: updatedOrder, error: error2 } = await supabase
+
+      // Update order to indicate that refund transaction recieved
+      const { data: updatedOrder, error } = await supabase
         .from<Order>("Orders")
         .update({ refundInvoice })
         .match({ invoice_id: invoiceId })
         .single();
 
-      if (error2) {
-        console.log("Error updating order: ", error2);
+      if (error) {
+        console.log("Error updating order: ", error);
         return res
           .status(500)
-          .send({ status: state.SERVER_ERROR, message: error2.message });
+          .send({ status: state.SERVER_ERROR, message: error.message });
       }
+
+      await telegramBot.sendMessageToAdmins(
+        "Refund request recieved for " + invoiceId
+      );
+
+      await telegramBot.sendMessageToAdmins(refundInvoice);
 
       return res.status(200).send({
         status: state.REFUND_RECIEVED,
