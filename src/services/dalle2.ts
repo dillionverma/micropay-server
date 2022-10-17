@@ -1,4 +1,4 @@
-import axios from "axios";
+import axios, { AxiosRequestHeaders } from "axios";
 import { assert } from "console";
 import fs from "fs";
 interface RequestBody {
@@ -77,6 +77,13 @@ export class DalleError extends Error {
   }
 }
 
+export interface GenerateResponse {
+  generationId: string;
+  publicUrl: string;
+  downloadUrl: string;
+  imageBuffer: Buffer;
+}
+
 /**
  * Dalle2 is the class for interacting with the Dalle API
  */
@@ -84,7 +91,7 @@ export class Dalle2 {
   private bearerToken: string;
   private url: string;
   private apiPrefix: string;
-  private headers: object;
+  private headers: AxiosRequestHeaders;
 
   constructor(bearerToken: string) {
     this.bearerToken = bearerToken;
@@ -97,19 +104,25 @@ export class Dalle2 {
   }
 
   /**
+   * Gets the download url for the image
+   * @param generationId the id of the generation
+   * @returns {string} the url to download the image
+   */
+  downloadUrl(generationId: string): string {
+    return `${this.url}/${this.apiPrefix}/generations/${generationId}/download`;
+  }
+
+  /**
    * Downloads the generated image
    * @param generationId  the id of the generation
    * @returns {Promise<Buffer>} the image buffer
    */
   async download(generationId: string): Promise<Buffer> {
-    const response = await axios(
-      `${this.url}/${this.apiPrefix}/generations/${generationId}/download`,
-      {
-        method: "GET",
-        headers: this.headers,
-        responseType: "arraybuffer",
-      }
-    );
+    const response = await axios(this.downloadUrl(generationId), {
+      method: "GET",
+      headers: this.headers,
+      responseType: "arraybuffer",
+    });
     return response.data;
   }
 
@@ -226,7 +239,7 @@ export class Dalle2 {
    * @param prompt the prompt to generate the image
    * @returns {Promise<string[]>} the generated images
    */
-  public async generate(prompt: string): Promise<string[]> {
+  public async generate(prompt: string): Promise<GenerateResponse[]> {
     return this._generateAndPublish(prompt);
   }
 
@@ -235,7 +248,9 @@ export class Dalle2 {
    * @param prompt the prompt to generate the image
    * @returns {Promise<string[]>} the generated images
    */
-  private async _generateAndPublish(prompt: string): Promise<string[]> {
+  private async _generateAndPublish(
+    prompt: string
+  ): Promise<GenerateResponse[]> {
     let task: Task;
 
     // 1. Create a task to generate images
@@ -261,10 +276,16 @@ export class Dalle2 {
 
               // 5. Publish all images
               const images = await Promise.all(
-                task.generations.data.map(
-                  async (image: Generation) => await this.publish(image.id)
-                )
+                task.generations.data.map(async (image: Generation) => {
+                  return {
+                    generationId: image.id,
+                    publicUrl: await this.publish(image.id),
+                    downloadUrl: this.downloadUrl(image.id),
+                    imageBuffer: await this.download(image.id),
+                  };
+                })
               );
+
               return resolve(images);
 
             // If the task fails, throw an error

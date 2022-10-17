@@ -1,10 +1,10 @@
 import cors from "cors";
 import express, { Request } from "express";
 import lnService from "lightning";
+import AWS from "./aws";
 import { Config, config } from "./config";
-import { BUCKET_NAME, uploadFileToS3 } from "./s3";
 import Sentry from "./sentry";
-import { Dalle2 } from "./services/dalle2";
+import { Dalle2, GenerateResponse } from "./services/dalle2";
 import { TelegramBot } from "./services/telegramBot";
 import { Order, supabase } from "./supabase";
 
@@ -15,6 +15,8 @@ const { lnd } = lnService.authenticatedLndGrpc({
   socket,
 });
 
+export const BUCKET_NAME = "dalle2-lightning";
+const aws = new AWS(config.awsAccessKey, config.awsSecretKey, BUCKET_NAME);
 const dalle2 = new Dalle2(config.dalleApiKey);
 
 const telegramBot = new TelegramBot(
@@ -317,8 +319,11 @@ export const init = (config: Config) => {
             const dalleImages = await dalle2.generate(prompt);
             // Upload to S3
             const images: string[] = await Promise.all(
-              dalleImages.map((image_url: string, index: number) =>
-                uploadFileToS3(image_url, BUCKET_NAME, `${id}-${index}.png`)
+              dalleImages.map((image: GenerateResponse) =>
+                aws.uploadImageBufferToS3(
+                  image.imageBuffer,
+                  `${image.generationId}.png`
+                )
               )
             );
 
