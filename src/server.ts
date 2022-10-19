@@ -346,7 +346,6 @@ export const init = (config: Config) => {
 
         // 2. If image has been generated, send it to user
         if (order.results) {
-          console.log("DONEE 1");
           return res.status(StatusCodes.OK).send({
             status: ORDER_STATE.DALLE_GENERATED,
             message: MESSAGE.DALLE_GENERATED,
