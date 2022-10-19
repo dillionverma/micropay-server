@@ -5,7 +5,7 @@ import { Application } from "express";
 import { StatusCodes } from "http-status-codes";
 import { CreateInvoiceResult } from "lightning";
 import { config } from "../src/config";
-import { init } from "../src/server";
+import { init, MESSAGE, ORDER_PROGRESS, ORDER_STATE } from "../src/server";
 
 chai.use(chaiAsPromised);
 chai.use(chaiHttp);
@@ -61,14 +61,13 @@ describe("api", () => {
     });
   });
 
-  describe("POST /invoice", () => {
+  describe("POST /generate", () => {
     it("should return 200", async () => {
       const prompt = "this is a test prompt";
-      const res = await chai.request(server).post(`/invoice`).send({ prompt });
+      const res = await chai.request(server).post(`/generate`).send({ prompt });
       const invoice = res.body as CreateInvoiceResult;
 
       expect(res).to.have.status(StatusCodes.OK);
-
       expect(invoice.chain_address).to.be.undefined;
       expect(invoice.description).to.equal(`Dalle-2 generate: "${prompt}"`);
       expect(invoice.id).to.be.a("string");
@@ -80,13 +79,27 @@ describe("api", () => {
     });
   });
 
-  describe("POST /refund", () => {
+  describe("GET /generate/:id/status", () => {
     it("should return 200", async () => {
-      // TODO
+      const prompt = "this is a test prompt";
+
+      // 1. First initiate a generate request
+      const res = await chai.request(server).post(`/generate`).send({ prompt });
+      const invoice = res.body as CreateInvoiceResult;
+
+      // 2. Next, check status of generation request
+      const resStatus = await chai
+        .request(server)
+        .get(`/generate/${invoice.id}/status`);
+
+      expect(resStatus).to.have.status(StatusCodes.OK);
+      expect(resStatus.body.status).to.equal(ORDER_STATE.INVOICE_NOT_PAID);
+      expect(resStatus.body.message).to.equal(MESSAGE.INVOICE_NOT_PAID);
+      expect(resStatus.body.progress).to.equal(ORDER_PROGRESS.INVOICE_NOT_PAID);
     });
   });
 
-  describe("POST /generate", () => {
+  describe("POST /refund", () => {
     it("should return 200", async () => {
       // TODO
     });

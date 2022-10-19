@@ -3,9 +3,9 @@ import chaiAsPromised from "chai-as-promised";
 import chaiFiles from "chai-files";
 import fs from "fs";
 import { createRequire } from "module";
-import { config } from "../src/config";
-import { Dalle2, Task } from "../src/services/dalle2";
-import { getNRandomElements, getRandomElement, sleep } from "../src/utils";
+import { config } from "../../src/config";
+import Dalle2, { Task } from "../../src/services/dalle2.service";
+import { getNRandomElements, getRandomElement, sleep } from "../../src/utils";
 const require = createRequire(import.meta.url);
 
 chai.use(chaiAsPromised);
@@ -46,7 +46,7 @@ describe("Dalle-2 API", () => {
 
   before(() => {
     dalle2 = new Dalle2(config.dalleApiKey);
-    task = require("./fixtures/task.json");
+    task = require("../fixtures/task.json");
   });
 
   describe("isTokenValid", () => {
@@ -78,6 +78,16 @@ describe("Dalle-2 API", () => {
       // SELECT A PROMPT
       let prompt: string = officialPrompts[0];
 
+      try {
+        const images = await dalle2.generate(prompt);
+        console.log(images);
+      } catch (error) {
+        console.log(error);
+      }
+    });
+
+    it("should not generate image if it contains profanity", async () => {
+      let prompt: string = "test swearword: fuck giraffe (please don't ban)";
       try {
         const images = await dalle2.generate(prompt);
         console.log(images);
