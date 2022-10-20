@@ -77,15 +77,18 @@ export const generationWorker = new Worker<GenerateJob>(
     await updateJobStatus(job, ORDER_STATE.DALLE_SAVING);
 
     // Update order to indicate that images have been generated
-    const { data: updatedOrder, error } = await supabase
-      .from<Order>("Orders")
-      .update({ results: images })
-      .match({ invoice_id: job.id })
-      .single();
 
-    if (error) {
-      console.error(error);
-      throw error;
+    if (process.env.NODE_ENV !== "test") {
+      const { data: updatedOrder, error } = await supabase
+        .from<Order>("Orders")
+        .update({ results: images })
+        .match({ invoice_id: job.id })
+        .single();
+
+      if (error) {
+        console.error(error);
+        throw error;
+      }
     }
 
     // Send telegram message
@@ -116,5 +119,5 @@ generationWorker.on("completed", (job) => {
 });
 
 generationWorker.on("failed", (job, err) => {
-  console.log(`Job ${job.id} failed with ${err.message}`);
+  console.log(`Job ${job.id} failed with ${err}`);
 });

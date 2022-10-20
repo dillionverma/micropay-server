@@ -382,7 +382,7 @@ export const init = (config: Config) => {
                 prompt: order.prompt,
               },
               {
-                attempts: 5, // Something else is most likely wrong at this point
+                attempts: 20, // Something else is most likely wrong at this point
                 backoff: {
                   type: "fixed",
                   delay: 2000,

@@ -13,10 +13,6 @@ chai.use(chaiFiles);
 const expect = chai.expect;
 var file = chaiFiles.file;
 
-// "a matte painting of a girl with a backpack and a smartphone that traveled back in time to an ancient Greek colosseum with gladiators, showing her back",
-// "Toronto streetcar on a rainy night in a techno style",
-// "italian man with a mustache dressed as mario wearing a solid red mario hat, crawling on the ground, licking a red mushroom with white spots, in a forest, photography, 50mm lens, f1.8",
-
 // Official prompt examples taken from Dalle-2 website
 const officialPrompts = [
   "a macro 35mm photograph of two mice in Hawaii, they're each wearing tiny swimsuits and are carrying tiny surf boards, digital art",
@@ -75,8 +71,7 @@ describe("Dalle-2 API", () => {
   // Uncomment to run locally
   describe.skip("generate", () => {
     it("should generate images", async () => {
-      // SELECT A PROMPT
-      let prompt: string = officialPrompts[0];
+      let prompt: string = getRandomElement(officialPrompts);
 
       try {
         const images = await dalle2.generate(prompt);
