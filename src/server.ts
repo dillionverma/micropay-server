@@ -8,7 +8,7 @@ import { Dalle2, GenerateResponse } from "./services/dalle2";
 import { TelegramBot } from "./services/telegramBot";
 import { Order, supabase } from "./supabase";
 
-const { invoiceMacaroon: macaroon, host } = config;
+const { lndMacaroonInvoice: macaroon, lndHost } = config;
 const socket = `${host}:10009`;
 const { lnd } = lnService.authenticatedLndGrpc({
   macaroon,
