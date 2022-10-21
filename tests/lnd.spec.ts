@@ -10,7 +10,7 @@ describe("lnService", () => {
   let lnd: lnService.AuthenticatedLnd;
 
   before(() => {
-    const { adminMacaroon: macaroon, host } = config;
+    const { lndMacaroonAdmin: macaroon, lndHost: host } = config;
     const socket = `${host}:10009`;
 
     // Create a new authenticated lnd gRPC connection

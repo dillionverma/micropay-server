@@ -1,21 +1,21 @@
 import { Telegram } from "telegraf";
 
 export class TelegramBot {
-  private personal: Telegram;
-  private group: Telegram;
+  private privateNotifierBot: Telegram;
+  private generationsBot: Telegram;
   private adminIds: string[];
-  private groupId: string;
+  private generationsBotId: string;
 
   constructor(
-    personalToken: string,
-    groupToken: string,
+    privateNotifierBotToken: string,
+    generationsBotToken: string,
     adminIds: string[],
-    groupId: string
+    generationsBotId: string
   ) {
     this.adminIds = adminIds;
-    this.groupId = groupId;
-    this.personal = new Telegram(personalToken);
-    this.group = new Telegram(groupToken);
+    this.generationsBotId = generationsBotId;
+    this.privateNotifierBot = new Telegram(privateNotifierBotToken);
+    this.generationsBot = new Telegram(generationsBotToken);
   }
 
   public async sendMessageToAdmins(message: string): Promise<void> {
@@ -24,8 +24,8 @@ export class TelegramBot {
 
     if (process.env.NODE_ENV !== "production") return;
 
-    for (const id of this.adminIds) {
-      await this.personal.sendMessage(id, message);
+    for (const adminId of this.adminIds) {
+      await this.privateNotifierBot.sendMessage(adminId, message);
     }
   }
 
@@ -37,12 +37,12 @@ export class TelegramBot {
     if (process.env.CI) return;
 
     for (const id of this.adminIds) {
-      await this.personal.sendMediaGroup(
+      await this.privateNotifierBot.sendMediaGroup(
         id,
-        images.map((media, i) => ({
+        images.map((image, index) => ({
           type: "photo",
-          media,
-          caption: i === 0 ? caption : "",
+          media: image,
+          caption: index === 0 ? caption : "",
         }))
       );
     }
@@ -55,12 +55,12 @@ export class TelegramBot {
     // Only send to group telegram if not in dev
     if (process.env.NODE_ENV !== "production") return;
 
-    await this.group.sendMediaGroup(
-      this.groupId,
-      images.map((media, i) => ({
+    await this.generationsBot.sendMediaGroup(
+      this.generationsBotId,
+      images.map((image, index) => ({
         type: "photo",
-        media,
-        caption: i === 0 ? caption : "",
+        media: image,
+        caption: index === 0 ? caption : "",
       }))
     );
   }
