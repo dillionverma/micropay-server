@@ -103,10 +103,12 @@ export default class Github {
    * @param keys The keys to update
    */
   public async updateAllSecrets(keys: string[]): Promise<void> {
-    for (const key of keys) {
-      const value = process.env[key];
-      await this.updateSecret(key, value);
-    }
+    await Promise.all(
+      keys.map(async (key) => {
+        const value = process.env[key];
+        await this.updateSecret(key, value);
+      })
+    );
   }
 
   /**
@@ -121,11 +123,12 @@ export default class Github {
       }
     );
 
-    for (const secret of secrets.secrets) {
-      const secret_name = secret.name;
-      console.log("Deleting secret", secret_name);
-      await this.deleteSecret(secret_name);
-    }
+    await Promise.all(
+      secrets.secrets.map(async ({ name }) => {
+        console.log("Deleting secret", name);
+        await this.deleteSecret(name);
+      })
+    );
     console.log();
   }
 
