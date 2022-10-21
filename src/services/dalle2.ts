@@ -11,7 +11,7 @@ interface RequestBody {
 
 export interface ImageGenerations {
   object: string;
-  data: Generation[];
+  data: ImageGeneration[];
 }
 
 export interface Task {
@@ -40,7 +40,7 @@ export interface CreditsResponse {
   object: string;
 }
 
-export interface Generation {
+export interface ImageGeneration {
   id: string;
   object: string;
   created: number;
@@ -145,7 +145,7 @@ export class Dalle2 {
   /**
    * Creates public page to share the generated image
    * @param generationId the id of the generation
-   * @returns {Promise<Generation>} the image data
+   * @returns {Promise<ImageGeneration>} the image data
    */
   async publish(generationId: string): Promise<string> {
     const res = await axios(
@@ -156,7 +156,7 @@ export class Dalle2 {
       }
     );
 
-    const task: Generation = res.data;
+    const task: ImageGeneration = res.data;
     assert(task.is_public === true); // Assert that the image is public
 
     // Return the public url
@@ -276,7 +276,7 @@ export class Dalle2 {
 
               // 5. Publish all images
               const images = await Promise.all(
-                task.generations.data.map(async (image: Generation) => {
+                task.generations.data.map(async (image: ImageGeneration) => {
                   return {
                     generationId: image.id,
                     publicUrl: await this.publish(image.id),

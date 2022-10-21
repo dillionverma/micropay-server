@@ -9,7 +9,7 @@ import { TelegramBot } from "./services/telegramBot";
 import { Order, supabase } from "./supabase";
 
 const { lndMacaroonInvoice: macaroon, lndHost } = config;
-const socket = `${host}:10009`;
+const socket = `${lndHost}:10009`;
 const { lnd } = lnService.authenticatedLndGrpc({
   macaroon,
   socket,
@@ -20,10 +20,10 @@ const aws = new AWS(config.awsAccessKey, config.awsSecretKey, BUCKET_NAME);
 const dalle2 = new Dalle2(config.dalleApiKey);
 
 const telegramBot = new TelegramBot(
-  config.personalTelegramToken,
-  config.groupTelegramToken,
-  [config.telegramUserId, config.telegramUserIdHaseab],
-  config.telegramGroupId
+  config.telegramPrivateNotifierBotToken,
+  config.telegramGenerationsBotToken,
+  [config.telegramUserIdDillion, config.telegramUserIdHaseab],
+  config.telegramGenerationsBotId
 );
 
 const DEFAULT_PRICE = process.env.NODE_ENV === "production" ? 1000 : 50;
