@@ -22,12 +22,12 @@ jobs:
 
       - run: yarn test
         env:
-          HOST: ${{ secrets.HOST }}
+          LND_HOST: ${{ secrets.LND_HOST }}
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_API_KEY: ${{ secrets.SUPABASE_API_KEY }}
-          READ_ONLY_MACAROON: ${{ secrets.READ_ONLY_MACAROON }}
-          INVOICE_MACAROON: ${{ secrets.INVOICE_MACAROON }}
-          ADMIN_MACAROON: ${{ secrets.ADMIN_MACAROON }}
+          LND_MACAROON_READ_ONLY: ${{ secrets.LND_MACAROON_READ_ONLY }}
+          LND_MACAROON_INVOICE: ${{ secrets.LND_MACAROON_INVOICE }}
+          LND_MACAROON_ADMIN: ${{ secrets.LND_MACAROON_ADMIN }}
           DALLE_API_KEY: ${{ secrets.DALLE_API_KEY }}
 
       - name: Get test coverage
