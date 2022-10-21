@@ -15,7 +15,7 @@ if (process.env.NODE_ENV === "production") {
 require("dotenv-safe").config({ path: envFile, allowEmptyValues: true }); // only ".env.test"
 
 (async () => {
-  const github = new Github(process.env.TOKEN_GITHUB, owner, repo);
+  const github = new Github(process.env.GITHUB_CI_TOKEN, owner, repo);
 
   // Delete all existing secrets
   await github.deleteAllSecrets();
