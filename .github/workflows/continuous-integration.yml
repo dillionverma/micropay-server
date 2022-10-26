@@ -10,6 +10,9 @@ jobs:
     services:
       redis:
         image: redis
+        # Maps port 6379 on service container to the host
+        ports:
+          - 6379:6379
         # Set health checks to wait until redis has started
         options: >-
           --health-cmd "redis-cli ping"
