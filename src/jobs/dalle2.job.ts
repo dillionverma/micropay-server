@@ -1,4 +1,5 @@
 import { Job, Queue, Worker } from "bullmq";
+import { GetInvoiceResult } from "lightning";
 
 import { config } from "../config";
 import {
@@ -49,14 +50,18 @@ export const generationWorker = new Worker<GenerateJob>(
 
     await updateJobStatus(job, ORDER_STATE.INVOICE_NOT_PAID);
 
-    // Get invoice from lnd
-    const invoice = await lightning.getInvoice(id);
+    let invoice: GetInvoiceResult;
+    if (process.env.NODE_ENV !== "test") {
+      // Get invoice from lnd
+      console.log("getting invoice");
+      invoice = await lightning.getInvoice(id);
 
-    // Check if invoice exists (sanity check)
-    if (!invoice) throw "Invoice not found";
+      // Check if invoice exists (sanity check)
+      if (!invoice) throw "Invoice not found";
 
-    // Check if invoice is paid (sanity check)
-    if (!invoice.is_confirmed) throw "Invoice not paid";
+      // Check if invoice is paid (sanity check)
+      if (!invoice.is_confirmed) throw "Invoice not paid";
+    }
 
     // Generate images
     await updateJobStatus(job, ORDER_STATE.DALLE_GENERATING);
@@ -77,7 +82,6 @@ export const generationWorker = new Worker<GenerateJob>(
     await updateJobStatus(job, ORDER_STATE.DALLE_SAVING);
 
     // Update order to indicate that images have been generated
-
     if (process.env.NODE_ENV !== "test") {
       const { data: updatedOrder, error } = await supabase
         .from<Order>("Orders")
@@ -93,14 +97,13 @@ export const generationWorker = new Worker<GenerateJob>(
 
     // Send telegram message
     const text = `
-    Received new order!
-    Prompt: "${prompt}"
-    Invoice ID: ${invoice.id}
-    Satoshis: ${invoice.tokens}
-    `;
+      Received new order!
+      Prompt: "${prompt}"
+      Invoice ID: ${invoice?.id}
+      Satoshis: ${invoice?.tokens}
+      `;
 
     try {
-      await telegramBot.sendImagesToAdmins(images, prompt);
       await telegramBot.sendImagesToGroup(images, prompt);
       await telegramBot.sendMessageToAdmins(text);
     } catch (e) {

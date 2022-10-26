@@ -1,10 +1,17 @@
+import { Job } from "bullmq";
 import chai from "chai";
 import chaiAsPromised from "chai-as-promised";
 import chaiHttp from "chai-http";
 import sinon, { SinonStub } from "sinon";
 import sinonChai from "sinon-chai";
-import { generationQueue, generationWorker } from "../../src/jobs/dalle2.job";
+import {
+  GenerateJob,
+  generationQueue,
+  generationWorker,
+} from "../../src/jobs/dalle2.job";
 import { aws, dalle2, lightning, telegramBot } from "../../src/server";
+import { getNRandomElements } from "../../src/utils";
+import { officialPrompts } from "../services/dalle2.service.test";
 
 chai.use(chaiAsPromised);
 chai.use(chaiHttp);
@@ -19,23 +26,21 @@ describe("Dalle2 Job", () => {
   let lightningSpy: SinonStub;
   let awsSpy: SinonStub;
   let telegramAdminMessageSpy: SinonStub;
-  let telegramAdminImagesSpy: SinonStub;
   let telegramGroupSpy: SinonStub;
 
   before(async () => {
     await generationQueue.obliterate();
   });
 
-  afterEach(() => {
-    dalle2Spy.restore();
-    lightningSpy.restore();
-    awsSpy.restore();
-    telegramAdminMessageSpy.restore();
-    telegramAdminImagesSpy.restore();
-    telegramGroupSpy.restore();
-  });
-
   describe("generate", async () => {
+    after(() => {
+      dalle2Spy.restore();
+      lightningSpy.restore();
+      awsSpy.restore();
+      telegramAdminMessageSpy.restore();
+      telegramGroupSpy.restore();
+    });
+
     it("should successfully generate images, upload to s3, and ping telegram", async () => {
       const invoiceId = "1";
 
@@ -110,9 +115,6 @@ describe("Dalle2 Job", () => {
       awsSpy = sinon.stub(aws, "uploadImageBufferToS3").resolves("test.png");
 
       telegramAdminMessageSpy = sinon
-        .stub(telegramBot, "sendImagesToAdmins")
-        .resolves();
-      telegramAdminImagesSpy = sinon
         .stub(telegramBot, "sendMessageToAdmins")
         .resolves();
       telegramGroupSpy = sinon
@@ -139,8 +141,58 @@ describe("Dalle2 Job", () => {
       expect(await job.getState()).to.equal("completed");
       expect(awsSpy).to.have.callCount(4);
       expect(telegramAdminMessageSpy).to.have.been.calledOnce;
-      expect(telegramAdminImagesSpy).to.have.been.calledOnce;
       expect(telegramGroupSpy).to.have.been.calledOnce;
     });
+  });
+
+  describe("investigate rate limit for task creation", async () => {
+    // Skip by default since it costs money.
+    it.skip(
+      "should queue 50 jobs at the same time to see if they succeed",
+      async () => {
+        const numTasks = 50;
+        const prompts = getNRandomElements(officialPrompts, numTasks);
+
+        console.time("Queuing 50 tasks at the same time");
+        try {
+          await Promise.all(
+            prompts.map(async (prompt, index) => {
+              const invoiceId = `${index + 1}`;
+              // Queue new job
+              await generationQueue.add(
+                "generate",
+                {
+                  prompt,
+                },
+                {
+                  attempts: 5, // Something else is most likely wrong at this point
+                  backoff: {
+                    type: "fixed",
+                    delay: 1000,
+                  },
+                  jobId: invoiceId,
+                }
+              );
+
+              // Wait for job to complete
+              await new Promise<void>((resolve) =>
+                generationWorker.on(
+                  "completed",
+                  async (job: Job<GenerateJob, any, string>) => {
+                    if (job.id === invoiceId) {
+                      expect(await job.getState()).to.equal("completed");
+                      resolve();
+                    }
+                  }
+                )
+              );
+            })
+          );
+        } catch (error) {
+          console.log(error);
+        }
+        console.timeEnd("Queuing 50 tasks at the same time");
+      }
+    ).timeout(120000);
   });
 });

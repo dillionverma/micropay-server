@@ -14,7 +14,7 @@ const expect = chai.expect;
 var file = chaiFiles.file;
 
 // Official prompt examples taken from Dalle-2 website
-const officialPrompts = [
+export const officialPrompts = [
   "a macro 35mm photograph of two mice in Hawaii, they're each wearing tiny swimsuits and are carrying tiny surf boards, digital art",
   "3D render of a cute tropical fish in an aquarium on a dark blue background, digital art",
   "an astronaut playing basketball with cats in space, digital art",
@@ -34,6 +34,8 @@ const officialPrompts = [
   "a stern-looking owl dressed as a librarian, digital art",
   "an oil painting by Matisse of a humanoid robot playing chess",
   "a bowl of soup that is also a portal to another dimension, digital art",
+  "synthwave sports car",
+  "panda mad scientist mixing sparkling chemicals, digital art",
 ];
 
 describe("Dalle-2 API", () => {
