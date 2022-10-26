@@ -41,6 +41,7 @@ jobs:
           LND_MACAROON_INVOICE: ${{ secrets.LND_MACAROON_INVOICE }}
           LND_MACAROON_ADMIN: ${{ secrets.LND_MACAROON_ADMIN }}
           DALLE_API_KEY: ${{ secrets.DALLE_API_KEY }}
+          DALLE_QUEUE_NAME: ${{ secrets.DALLE_QUEUE_NAME }}
 
       - name: Get test coverage
         uses: codecov/codecov-action@v3
