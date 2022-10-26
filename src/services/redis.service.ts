@@ -1,9 +1,12 @@
 import IORedis from "ioredis";
 import { config } from "../config";
 
+const port = Number(config.redisPort);
+const host = config.redisHost;
+
 export const connection = new IORedis({
-  port: 6379,
-  host: config.redisHost || "127.0.0.1",
+  port,
+  host,
   // password: config.redisPass || "",
   password: "",
   maxRetriesPerRequest: null,

@@ -22,6 +22,10 @@ describe("Dalle2 Job", () => {
   let telegramAdminImagesSpy: SinonStub;
   let telegramGroupSpy: SinonStub;
 
+  before(async () => {
+    await generationQueue.obliterate();
+  });
+
   afterEach(() => {
     dalle2Spy.restore();
     lightningSpy.restore();
