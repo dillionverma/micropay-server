@@ -61,10 +61,10 @@ describe("api", () => {
     });
   });
 
-  describe("POST /generate", () => {
+  describe("POST /invoice", () => {
     it("should return 200", async () => {
       const prompt = "this is a test prompt";
-      const res = await chai.request(server).post(`/generate`).send({ prompt });
+      const res = await chai.request(server).post(`/invoice`).send({ prompt });
       const invoice = res.body as CreateInvoiceResult;
 
       expect(res).to.have.status(StatusCodes.OK);
@@ -84,7 +84,7 @@ describe("api", () => {
       const prompt = "this is a test prompt";
 
       // 1. First initiate a generate request
-      const res = await chai.request(server).post(`/generate`).send({ prompt });
+      const res = await chai.request(server).post(`/invoice`).send({ prompt });
       const invoice = res.body as CreateInvoiceResult;
 
       // 2. Next, check status of generation request
