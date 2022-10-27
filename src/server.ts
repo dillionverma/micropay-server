@@ -99,7 +99,7 @@ export const init = (config: Config) => {
   });
 
   app.post(
-    "/generate",
+    "/invoice",
     async (
       req: Request<unknown, unknown, { prompt: string }, unknown>,
       res
