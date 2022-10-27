@@ -409,6 +409,8 @@ export const init = (config: Config) => {
     }
   );
 
+  app.use(Sentry.Handlers.errorHandler());
+
   app.listen(config.port, () => {
     console.log(`Server running on port ${config.port}`);
   });
