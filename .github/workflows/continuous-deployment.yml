@@ -10,6 +10,19 @@ jobs:
     name: Test
     runs-on: ubuntu-latest
 
+    services:
+      redis:
+        image: redis
+        # Maps port 6379 on service container to the host
+        ports:
+          - 6379:6379
+        # Set health checks to wait until redis has started
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
     steps:
       - uses: actions/checkout@v2
       - uses: actions/setup-node@v1
@@ -22,6 +35,8 @@ jobs:
 
       - run: yarn test
         env:
+          REDIS_HOST: ${{ secrets.REDIS_HOST }}
+          REDIS_PORT: ${{ secrets.REDIS_PORT }}
           LND_HOST: ${{ secrets.LND_HOST }}
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_API_KEY: ${{ secrets.SUPABASE_API_KEY }}
@@ -29,6 +44,7 @@ jobs:
           LND_MACAROON_INVOICE: ${{ secrets.LND_MACAROON_INVOICE }}
           LND_MACAROON_ADMIN: ${{ secrets.LND_MACAROON_ADMIN }}
           DALLE_API_KEY: ${{ secrets.DALLE_API_KEY }}
+          DALLE_QUEUE_NAME: ${{ secrets.DALLE_QUEUE_NAME }}
 
       - name: Get test coverage
         uses: codecov/codecov-action@v3
