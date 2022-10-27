@@ -19,6 +19,9 @@ export enum ENV_KEYS {
   DALLE_API_KEY = "dalleApiKey",
   DALLE_QUEUE_NAME = "dalleQueueName",
   DALLE_QUEUE_CONCURRENCY = "dalleQueueConcurrency",
+  REDIS_CONNECTION_STRING = "redisConnectionString",
+  REDIS_USERNAME = "redisUsername",
+  REDIS_PASSWORD = "redisPassword",
   REDIS_HOST = "redisHost",
   REDIS_PORT = "redisPort",
   SUPABASE_URL = "supabaseUrl",
@@ -47,6 +50,9 @@ export interface Config {
   [ENV_KEYS.DALLE_API_KEY]: string;
   [ENV_KEYS.DALLE_QUEUE_NAME]: string;
   [ENV_KEYS.DALLE_QUEUE_CONCURRENCY]: string;
+  [ENV_KEYS.REDIS_CONNECTION_STRING]: string;
+  [ENV_KEYS.REDIS_USERNAME]: string;
+  [ENV_KEYS.REDIS_PASSWORD]: string;
   [ENV_KEYS.REDIS_HOST]: string;
   [ENV_KEYS.REDIS_PORT]: string;
   [ENV_KEYS.SUPABASE_URL]: string;
@@ -79,6 +85,9 @@ export const config: Config = {
   [ENV_KEYS.DALLE_QUEUE_NAME]: process.env.DALLE_QUEUE_NAME,
   [ENV_KEYS.DALLE_QUEUE_CONCURRENCY]:
     process.env.DALLE_QUEUE_CONCURRENCY || "20",
+  [ENV_KEYS.REDIS_CONNECTION_STRING]: process.env.REDIS_CONNECTION_STRING,
+  [ENV_KEYS.REDIS_USERNAME]: process.env.REDIS_USERNAME,
+  [ENV_KEYS.REDIS_PASSWORD]: process.env.REDIS_PASSWORD,
   [ENV_KEYS.REDIS_HOST]: process.env.REDIS_HOST,
   [ENV_KEYS.REDIS_PORT]: process.env.REDIS_PORT || "6379",
   [ENV_KEYS.SUPABASE_URL]: process.env.SUPABASE_URL,

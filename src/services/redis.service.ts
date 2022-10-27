@@ -1,17 +1,30 @@
-import IORedis from "ioredis";
+import Redis from "ioredis";
 import { config } from "../config";
 
-const port = Number(config.redisPort);
-const host = config.redisHost;
+const {
+  redisConnectionString,
+  redisHost,
+  redisPassword,
+  redisPort,
+  redisUsername,
+} = config;
 
-export const connection = new IORedis({
-  port,
-  host,
-  // password: config.redisPass || "",
-  password: "",
-  maxRetriesPerRequest: null,
-  reconnectOnError(err) {
-    console.error(err);
-    return true;
-  },
-});
+let connection;
+
+if (config.redisConnectionString) {
+  connection = new Redis(redisConnectionString, { maxRetriesPerRequest: null });
+} else {
+  connection = new Redis({
+    username: redisUsername,
+    password: redisPassword,
+    host: redisHost,
+    port: Number(redisPort),
+    maxRetriesPerRequest: null,
+    reconnectOnError(err) {
+      console.error(err);
+      return true;
+    },
+  });
+}
+
+export { connection };
