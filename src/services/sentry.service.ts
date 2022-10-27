@@ -1,6 +1,6 @@
 import * as Sentry from "@sentry/node";
 import "@sentry/tracing";
-import { config } from "./config";
+import { config } from "../config";
 
 Sentry.init({
   dsn: config.sentryDsn,

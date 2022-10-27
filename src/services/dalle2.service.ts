@@ -87,7 +87,7 @@ export interface GenerateResponse {
 /**
  * Dalle2 is the class for interacting with the Dalle API
  */
-export class Dalle2 {
+export default class Dalle2 {
   private bearerToken: string;
   private url: string;
   private apiPrefix: string;
@@ -304,7 +304,7 @@ export class Dalle2 {
                 status: task.status_information,
               });
           }
-        }, 3000);
+        }, 5000);
       } catch (error) {
         console.error("Error occured while polling task: ", error);
         if (error.response) {

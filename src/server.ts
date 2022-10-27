@@ -1,55 +1,84 @@
+import { Job } from "bullmq";
 import cors from "cors";
 import express, { Request } from "express";
-import lnService from "lightning";
-import AWS from "./aws";
+import { StatusCodes } from "http-status-codes";
 import { Config, config } from "./config";
-import Sentry from "./sentry";
-import { Dalle2, GenerateResponse } from "./services/dalle2";
-import { TelegramBot } from "./services/telegramBot";
-import { Order, supabase } from "./supabase";
+import { generationQueue } from "./jobs/dalle2.job";
+import AWS from "./services/aws.services";
+import Dalle2 from "./services/dalle2.service";
+import Lightning from "./services/lightning.service";
+import Sentry from "./services/sentry.service";
+import { Order, supabase } from "./services/supabase.service";
+import { TelegramBot } from "./services/telegram.service";
+import { sleep } from "./utils";
 
-const { lndMacaroonInvoice: macaroon, lndHost } = config;
-const socket = `${lndHost}:10009`;
-const { lnd } = lnService.authenticatedLndGrpc({
-  macaroon,
-  socket,
-});
+export const lightning = new Lightning(
+  config.lndMacaroonInvoice,
+  config.lndHost,
+  config.lndPort
+);
 
 export const BUCKET_NAME = "dalle2-lightning";
-const aws = new AWS(config.awsAccessKey, config.awsSecretKey, BUCKET_NAME);
-const dalle2 = new Dalle2(config.dalleApiKey);
+export const aws = new AWS(
+  config.awsAccessKey,
+  config.awsSecretKey,
+  BUCKET_NAME
+);
+export const dalle2 = new Dalle2(config.dalleApiKey);
 
-const telegramBot = new TelegramBot(
+export const telegramBot = new TelegramBot(
   config.telegramPrivateNotifierBotToken,
   config.telegramGenerationsBotToken,
   [config.telegramUserIdDillion, config.telegramUserIdHaseab],
-  config.telegramGenerationsBotId
+  config.telegramGroupIdMicropay
 );
 
 const DEFAULT_PRICE = process.env.NODE_ENV === "production" ? 1000 : 50;
 
-enum state {
+export enum ORDER_STATE {
   INVOICE_NOT_FOUND = "INVOICE_NOT_FOUND",
   INVOICE_NOT_PAID = "INVOICE_NOT_PAID",
+
   DALLE_GENERATING = "DALLE_GENERATING",
+  DALLE_UPLOADING = "DALLE_UPLOADING",
+  DALLE_SAVING = "DALLE_SAVING",
   DALLE_GENERATED = "DALLE_GENERATED",
   DALLE_FAILED = "DALLE_FAILED",
+
   INVOICE_CANCELLED = "INVOICE_CANCELLED",
   USER_ERROR = "USER_ERROR",
   SERVER_ERROR = "SERVER_ERROR",
   REFUND_RECIEVED = "REFUND_RECIEVED",
 }
 
-const MESSAGE: { [key in state]: string } = {
+export const MESSAGE: { [key in ORDER_STATE]: string } = {
   INVOICE_NOT_FOUND: "Invoice not found",
-  INVOICE_NOT_PAID: "Invoice not paid yet",
+  INVOICE_NOT_PAID: "Order received! Waiting for payment...",
+
   DALLE_GENERATING: "Invoice paid! Dalle-2 is currently generating images...",
+  DALLE_UPLOADING: "Images generated! Uploading images to cloud...",
+  DALLE_SAVING: "last change",
   DALLE_GENERATED: "Dalle-2 has generated images.",
   DALLE_FAILED: "Dalle-2 failed to generate images.",
+
   INVOICE_CANCELLED: "Invoice was cancelled",
   USER_ERROR: "An error occured",
   SERVER_ERROR: "An error occured on the server",
   REFUND_RECIEVED: "Refund recieved",
+};
+
+export const ORDER_PROGRESS: { [key in ORDER_STATE]?: number } = {
+  INVOICE_NOT_FOUND: 0,
+
+  INVOICE_NOT_PAID: 20,
+  DALLE_GENERATING: 60,
+  DALLE_UPLOADING: 80,
+  DALLE_SAVING: 90,
+
+  DALLE_FAILED: -1,
+  INVOICE_CANCELLED: -1,
+  USER_ERROR: -1,
+  SERVER_ERROR: -1,
 };
 
 export const init = (config: Config) => {
@@ -66,11 +95,11 @@ export const init = (config: Config) => {
   app.use(express.json()); // parse application/json
 
   app.get("/", async (req, res) => {
-    res.status(200).send("Hello World");
+    res.status(StatusCodes.OK).send("Hello World");
   });
 
   app.post(
-    "/invoice",
+    "/generate",
     async (
       req: Request<unknown, unknown, { prompt: string }, unknown>,
       res
@@ -84,18 +113,19 @@ export const init = (config: Config) => {
           : "Dev: Open AI Token expired";
       if (!isValid) {
         await telegramBot.sendMessageToAdmins(text);
-        return res.status(500).send({ error: "Dalle token has expired" });
+        return res
+          .status(StatusCodes.INTERNAL_SERVER_ERROR)
+          .send({ error: "Dalle token has expired" });
       }
 
       try {
         // https://bitcoin.stackexchange.com/questions/85951/whats-the-maximum-size-of-the-memo-in-a-ln-payment-request
-        const invoice = await lnService.createInvoice({
-          lnd,
-          description: `Dalle-2 generate: "${prompt.substring(0, 300)}"`,
-          tokens: DEFAULT_PRICE,
-        });
+        const invoice = await lightning.createInvoice(
+          `Dalle-2 generate: "${prompt.substring(0, 300)}"`,
+          DEFAULT_PRICE
+        );
 
-        const { data, error } = await supabase.from("Orders").insert([
+        const { error } = await supabase.from("Orders").insert([
           {
             invoice_id: invoice.id,
             invoice_request: invoice.request,
@@ -105,29 +135,39 @@ export const init = (config: Config) => {
           },
         ]);
 
+        if (error) {
+          return res
+            .status(StatusCodes.INTERNAL_SERVER_ERROR)
+            .send({ error: error.message });
+        }
+
         const text = `
-      New Order request
-      ENV: ${process.env.NODE_ENV}
-      Invoice Request: ${invoice.request}
-      Invoice Tokens: ${invoice.tokens}
-      Prompt: ${prompt}
-      `;
+        New Order request
+        ENV: ${process.env.NODE_ENV}
+        Invoice Request: ${invoice.request}
+        Invoice Tokens: ${invoice.tokens}
+        Prompt: ${prompt}
+        `;
 
         await telegramBot.sendMessageToAdmins(text);
-        if (error) return res.status(500).send({ error: error.message });
         console.log("Invoice generated: ", invoice);
-        res.status(200).send(invoice);
+        return res.status(StatusCodes.OK).send(invoice);
       } catch (e) {
         console.log(e);
-        res.status(500).send({ error: e.message });
+        res
+          .status(StatusCodes.INTERNAL_SERVER_ERROR)
+          .send({ error: e.message });
       }
     }
   );
 
   app.get("/dalle2-test", async (req, res) => {
     if (process.env.NODE_ENV === "production") {
-      return res.status(500).send({ error: "Not allowed" });
+      return res
+        .status(StatusCodes.INTERNAL_SERVER_ERROR)
+        .send({ error: "Not allowed" });
     }
+
     // Generate images
     const prompts = [
       "a store front that has the word 'openai' written on it",
@@ -146,12 +186,12 @@ export const init = (config: Config) => {
       const images = await dalle2.generate(prompts[i]);
       // const images = await dalle2.generate(vulgurPrompt);
       console.log(images);
-      res.status(200).send({ images });
+      res.status(StatusCodes.OK).send({ images });
     } catch (e) {
       if (e.error) {
-        res.status(400).send({ error: e.error });
+        res.status(StatusCodes.INTERNAL_SERVER_ERROR).send({ error: e.error });
       }
-      res.status(400).send({ error: e });
+      res.status(StatusCodes.INTERNAL_SERVER_ERROR).send({ error: e });
     }
   });
 
@@ -165,7 +205,7 @@ export const init = (config: Config) => {
         },
       ]);
 
-      return res.status(200).send({
+      return res.status(StatusCodes.OK).send({
         status: "success",
       });
     }
@@ -190,9 +230,13 @@ export const init = (config: Config) => {
         .match({ invoice_id: invoiceId })
         .single();
 
-      if (error) return res.status(500).send({ error: error.message });
+      if (error) {
+        return res
+          .status(StatusCodes.INTERNAL_SERVER_ERROR)
+          .send({ error: error.message });
+      }
 
-      return res.status(200).send({
+      return res.status(StatusCodes.OK).send({
         status: "success",
       });
     }
@@ -221,8 +265,8 @@ export const init = (config: Config) => {
       if (error) {
         console.log("Error updating order: ", error);
         return res
-          .status(500)
-          .send({ status: state.SERVER_ERROR, message: error.message });
+          .status(StatusCodes.INTERNAL_SERVER_ERROR)
+          .send({ status: ORDER_STATE.SERVER_ERROR, message: error.message });
       }
 
       await telegramBot.sendMessageToAdmins(
@@ -231,80 +275,95 @@ export const init = (config: Config) => {
 
       await telegramBot.sendMessageToAdmins(refundInvoice);
 
-      return res.status(200).send({
-        status: state.REFUND_RECIEVED,
+      return res.status(StatusCodes.OK).send({
+        status: ORDER_STATE.REFUND_RECIEVED,
         message: MESSAGE.REFUND_RECIEVED,
       });
     }
   );
 
-  app.post(
-    "/generate",
-    async (
-      req: Request<
-        unknown,
-        unknown,
-        { prompt: string; invoiceId: string },
-        unknown
-      >,
-      res
-    ) => {
-      // Check if params passed
-      if (!req.body.prompt || !req.body.invoiceId) {
-        res
-          .status(400)
-          .send({ status: state.USER_ERROR, message: "Missing parameters" });
-        return;
-      }
+  /*
+
+  Flow:
+  1. User enters prompt
+  2. Request is sent to server POST /generate
+  3. Server generates invoice
+  4. Server sends invoice to user
+  5. User pays invoice
+  6. Server recieves payment
+  7. Server generates images
+  8. Server sends images to user
+  */
+
+  /**
+   * @param {string} id - Invoice id
+   */
+  app.get(
+    "/generate/:id/status",
+    async (req: Request<{ id: string }, unknown, unknown, unknown>, res) => {
+      const { id } = req.params;
+
       try {
         // get invoice from lnd
-        const { prompt, invoiceId: id } = req.body;
-        const invoice = await lnService.getInvoice({
-          lnd,
-          id,
-        });
+        const invoice = await lightning.getInvoice(id);
 
+        // Check if invoice found (sanity check)
         if (!invoice)
-          return res.status(400).send({
-            status: state.INVOICE_NOT_FOUND,
+          return res.status(StatusCodes.NOT_FOUND).send({
+            status: ORDER_STATE.INVOICE_NOT_FOUND,
             message: MESSAGE.INVOICE_NOT_FOUND,
           });
 
-        // Get order object from database
+        // Check if invoice is paid
+        if (!invoice.is_confirmed) {
+          console.log({
+            status: ORDER_STATE.INVOICE_NOT_PAID,
+            message: MESSAGE.INVOICE_NOT_PAID,
+            progress: ORDER_PROGRESS.INVOICE_NOT_PAID,
+            invoice: invoice.request,
+          });
+          return res.status(StatusCodes.OK).send({
+            status: ORDER_STATE.INVOICE_NOT_PAID,
+            message: MESSAGE.INVOICE_NOT_PAID,
+            progress: ORDER_PROGRESS.INVOICE_NOT_PAID,
+          });
+        }
+
+        // 1. Check if image has already been generated
         const { data: order, error } = await supabase
           .from<Order>("Orders")
           .select("*")
-          .match({ invoice_id: invoice.id })
+          .match({ invoice_id: id })
           .limit(1)
           .single();
 
+        if (error) {
+          console.error("Error getting order: ", error);
+          return res
+            .status(StatusCodes.INTERNAL_SERVER_ERROR)
+            .send({ status: ORDER_STATE.SERVER_ERROR, message: error.message });
+        }
+
+        // 2. If image has been generated, send it to user
         if (order.results) {
-          return res.status(200).send({
-            status: state.DALLE_GENERATED,
+          return res.status(StatusCodes.OK).send({
+            status: ORDER_STATE.DALLE_GENERATED,
             message: MESSAGE.DALLE_GENERATED,
+            progress: ORDER_PROGRESS.DALLE_GENERATED,
             images: order.results,
           });
         }
 
-        if (invoice.is_confirmed && !order.generated) {
-          // Update order to indicate that images are being generated
-          const { data: updateOrder, error } = await supabase
-            .from<Order>("Orders")
-            .update({ generated: true })
-            .match({ invoice_id: invoice.id })
-            .single();
+        let job: Job;
+        // 4. If invoice has been paid, check the generation queue
+        job = await generationQueue.getJob(id);
 
-          if (error) {
-            console.error(error);
-            return res.status(500).send({
-              status: state.SERVER_ERROR,
-              message: MESSAGE.SERVER_ERROR,
-            });
-          }
-
+        // 3. If image has not been generated, check if invoice has been paid
+        if (invoice.is_confirmed) {
           if (process.env.MOCK_IMAGES === "true") {
-            return res.status(200).send({
-              status: state.DALLE_GENERATED,
+            await sleep(2000);
+            return res.status(StatusCodes.OK).send({
+              status: ORDER_STATE.DALLE_GENERATED,
               message: MESSAGE.DALLE_GENERATED,
               images: [
                 "https://cdn.openai.com/labs/images/3D%20render%20of%20a%20cute%20tropical%20fish%20in%20an%20aquarium%20on%20a%20dark%20blue%20background,%20digital%20art.webp?v=1",
@@ -314,97 +373,55 @@ export const init = (config: Config) => {
               ],
             });
           }
-          // Generate images
-          try {
-            const dalleImages = await dalle2.generate(prompt);
-            // Upload to S3
-            const images: string[] = await Promise.all(
-              dalleImages.map((image: GenerateResponse) =>
-                aws.uploadImageBufferToS3(
-                  image.imageBuffer,
-                  `${image.generationId}.png`
-                )
-              )
+
+          if (!job) {
+            // 5. If job is not in queue, add it to the queue
+            job = await generationQueue.add(
+              "generate",
+              {
+                prompt: order.prompt,
+              },
+              {
+                attempts: 20, // Something else is most likely wrong at this point
+                backoff: {
+                  type: "fixed",
+                  delay: 2000,
+                },
+                jobId: id,
+              }
             );
-
-            console.log(images);
-
-            // Update order to indicate that images have been generated
-            const { data: updatedOrder, error: error2 } = await supabase
-              .from<Order>("Orders")
-              .update({ results: images })
-              .match({ invoice_id: invoice.id })
-              .single();
-
-            if (error2) {
-              console.error(error);
-              return res.status(500).send({
-                status: state.SERVER_ERROR,
-                message: error2.message,
-              });
-            }
-
-            // Send telegram message to myself
-            const text = `
-          Received new order!
-          Prompt: "${prompt}"
-          Invoice ID: ${invoice.id}
-          Satoshis: ${invoice.tokens}
-          `;
-
-            try {
-              await telegramBot.sendImagesToAdmins(images, prompt);
-              await telegramBot.sendImagesToGroup(images, prompt);
-              await telegramBot.sendMessageToAdmins(text);
-            } catch (e) {
-              console.error("Posting to telegram failed");
-              console.error(e);
-            }
-          } catch (e) {
-            return res.status(400).send({
-              status: state.SERVER_ERROR,
-              message: "Error occured, please send refund",
+            await job.updateProgress(ORDER_PROGRESS.INVOICE_NOT_PAID);
+            await job.update({
+              ...job.data,
+              message: MESSAGE.DALLE_GENERATING,
             });
           }
+
+          // 6. If job is in queue, but not done, send progress
+          return res.status(StatusCodes.OK).send({
+            status: job.data.status,
+            message: job.data.message,
+            progress: job.progress,
+            images: [],
+          });
         } else if (invoice.is_canceled) {
-          return res.status(200).send({
-            status: state.INVOICE_CANCELLED,
+          return res.status(StatusCodes.OK).send({
+            status: ORDER_STATE.INVOICE_CANCELLED,
             message: MESSAGE.INVOICE_CANCELLED,
-          });
-        } else if (!invoice.is_confirmed) {
-          console.log({
-            status: state.INVOICE_NOT_PAID,
-            message: MESSAGE.INVOICE_NOT_PAID,
-            invoice: invoice.request,
-          });
-          return res.status(200).send({
-            status: state.INVOICE_NOT_PAID,
-            message: MESSAGE.INVOICE_NOT_PAID,
-          });
-        } else if (invoice.is_confirmed && order.generated) {
-          console.log({
-            status: state.DALLE_GENERATING,
-            message: MESSAGE.DALLE_GENERATING,
-          });
-          return res.status(200).send({
-            status: state.DALLE_GENERATING,
-            message: MESSAGE.DALLE_GENERATING,
+            progress: ORDER_PROGRESS.INVOICE_CANCELLED,
           });
         } else {
-          console.log("SERVER ERROR 1");
-          return res.status(200).send({
-            status: state.SERVER_ERROR,
+          console.error("SERVER ERROR 1");
+          return res.status(StatusCodes.OK).send({
+            status: ORDER_STATE.SERVER_ERROR,
             message: MESSAGE.SERVER_ERROR,
+            progress: ORDER_PROGRESS.SERVER_ERROR,
           });
         }
       } catch (e) {
-        console.error(e);
-        console.log("SERVER ERROR 2");
-
-        return res.status(500).send({
-          status: state.SERVER_ERROR,
-          message: e.message,
-        });
+        return res
+          .status(StatusCodes.INTERNAL_SERVER_ERROR)
+          .send({ error: e.message });
       }
     }
   );

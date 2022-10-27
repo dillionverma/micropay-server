@@ -4,5 +4,5 @@
   "exit": true,
   "recursive": true,
   "require": "@swc/register",
-  "spec": "tests/**/*.spec.ts"
+  "spec": "tests/**/*.test.ts"
 }
