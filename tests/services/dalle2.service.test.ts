@@ -117,7 +117,8 @@ describe("Dalle-2 API", () => {
       const filename = "test.png";
       const generationId = task.generations.data[0].id;
       await dalle2.downloadFile(generationId, filename);
-      expect(file("test.png")).to.exist;
+      expect(file(filename)).to.exist;
+      await sleep(1000);
       fs.unlinkSync(filename); // delete the file
     });
   });
