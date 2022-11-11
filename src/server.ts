@@ -242,6 +242,13 @@ export const init = (config: Config) => {
     }
   );
 
+  //Write a function to accept a GET request for config.mockImages value from the config file
+  app.get("/mock-images", async (req, res) => {
+    if (process.env.NODE_ENV === "development") {
+      res.status(StatusCodes.OK).send(config.mockImages);
+    }
+  });
+
   app.post(
     "/refund",
     async (
