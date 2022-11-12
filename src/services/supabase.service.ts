@@ -3,8 +3,10 @@ import { config } from "../config";
 
 export type Order = {
   id: number;
+  uuid: string;
   created_at: Date;
   invoice_id: string;
+  lsat_id: number;
   invoice_request: string;
   generated: boolean;
   satoshis: number;

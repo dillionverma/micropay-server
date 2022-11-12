@@ -3,6 +3,7 @@ import lnService, {
   CreateInvoiceResult,
   GetInvoiceResult,
   GetWalletInfoResult,
+  PayResult,
 } from "lightning";
 
 /**
@@ -19,13 +20,19 @@ export default class Lightning {
    * @param host the host of the lnd node
    * @param port the port of the lnd node
    */
-  constructor(macaroon: string, host: string, port: number | string) {
+  constructor(
+    macaroon: string,
+    host: string,
+    port: number | string,
+    cert?: string
+  ) {
     this.host = host;
     this.port = port.toString();
     const socket = `${this.host}:${this.port}`;
     const { lnd } = lnService.authenticatedLndGrpc({
       macaroon,
       socket,
+      cert,
     });
     this.lnd = lnd;
   }
@@ -59,6 +66,19 @@ export default class Lightning {
       id,
     });
     return invoice;
+  }
+
+  /**
+   * Pay a lightning invoice
+   * @param invoice invoice
+   * @returns The payment
+   */
+  public async payInvoice(invoice: string): Promise<PayResult> {
+    const payment = await lnService.pay({
+      lnd: this.lnd,
+      request: invoice,
+    });
+    return payment;
   }
 
   /**

@@ -1,8 +1,13 @@
+import { boltwall } from "boltwall";
 import { Job } from "bullmq";
 import cors from "cors";
 import express, { Request } from "express";
 import { StatusCodes } from "http-status-codes";
+import { Lsat } from "lsat-js";
 import { Config, config } from "./config";
+import { MAX_UNITS } from "./constants";
+import { findLsatByToken, insertLsat, LsatRow } from "./db/lsats";
+import { findOrderByUUID } from "./db/orders";
 import { generationQueue } from "./jobs/dalle2.job";
 import AWS from "./services/aws.services";
 import Dalle2 from "./services/dalle2.service";
@@ -10,12 +15,14 @@ import Lightning from "./services/lightning.service";
 import Sentry from "./services/sentry.service";
 import { Order, supabase } from "./services/supabase.service";
 import { TelegramBot } from "./services/telegram.service";
-import { sleep } from "./utils";
+import { getHost, sleep } from "./utils";
+import { getFinalPriceSats } from "./utils/pricing";
 
 export const lightning = new Lightning(
   config.lndMacaroonInvoice,
   config.lndHost,
-  config.lndPort
+  config.lndPort,
+  process.env.NODE_ENV === "test" ? config.lndTlsCert : null // needed for test environment
 );
 
 export const BUCKET_NAME = "dalle2-lightning";
@@ -33,7 +40,11 @@ export const telegramBot = new TelegramBot(
   config.telegramGroupIdMicropay
 );
 
-const DEFAULT_PRICE = process.env.NODE_ENV === "production" ? 1000 : 50;
+// The default price per generation in satoshis
+export const UNIT_PRICE = process.env.NODE_ENV === "production" ? 1000 : 50;
+
+// The estimated unit cost per generation in satoshis
+export const UNIT_COST = 700;
 
 export enum ORDER_STATE {
   INVOICE_NOT_FOUND = "INVOICE_NOT_FOUND",
@@ -74,6 +85,7 @@ export const ORDER_PROGRESS: { [key in ORDER_STATE]?: number } = {
   DALLE_GENERATING: 60,
   DALLE_UPLOADING: 80,
   DALLE_SAVING: 90,
+  DALLE_GENERATED: 100,
 
   DALLE_FAILED: -1,
   INVOICE_CANCELLED: -1,
@@ -90,7 +102,8 @@ export const init = (config: Config) => {
   // TracingHandler creates a trace for every incoming request
   app.use(Sentry.Handlers.tracingHandler());
 
-  app.use(cors());
+  // Enable WWW-authenticate header for boltwall
+  app.use(cors({ exposedHeaders: ["WWW-Authenticate"] }));
   app.use(express.urlencoded({ extended: true })); // parse application/x-www-form-urlencoded
   app.use(express.json()); // parse application/json
 
@@ -98,8 +111,15 @@ export const init = (config: Config) => {
     res.status(StatusCodes.OK).send("Hello World");
   });
 
+  const getInvoiceDescription = (
+    req: Request<unknown, unknown, { quantity: string }, unknown>
+  ) => {
+    const { quantity } = req.body;
+    return `Micropay bulk purchase of ${quantity} generations`;
+  };
+
   app.post(
-    "/invoice",
+    "/generate",
     async (
       req: Request<unknown, unknown, { prompt: string }, unknown>,
       res
@@ -122,7 +142,7 @@ export const init = (config: Config) => {
         // https://bitcoin.stackexchange.com/questions/85951/whats-the-maximum-size-of-the-memo-in-a-ln-payment-request
         const invoice = await lightning.createInvoice(
           `Dalle-2 generate: "${prompt.substring(0, 300)}"`,
-          DEFAULT_PRICE
+          UNIT_PRICE
         );
 
         const { error } = await supabase.from("Orders").insert([
@@ -394,6 +414,445 @@ export const init = (config: Config) => {
             await job.update({
               ...job.data,
               message: MESSAGE.DALLE_GENERATING,
+            });
+          }
+
+          // 6. If job is in queue, but not done, send progress
+          return res.status(StatusCodes.OK).send({
+            status: job.data.status,
+            message: job.data.message,
+            progress: job.progress,
+            images: [],
+          });
+        } else if (invoice.is_canceled) {
+          return res.status(StatusCodes.OK).send({
+            status: ORDER_STATE.INVOICE_CANCELLED,
+            message: MESSAGE.INVOICE_CANCELLED,
+            progress: ORDER_PROGRESS.INVOICE_CANCELLED,
+          });
+        } else {
+          console.error("SERVER ERROR 1");
+          return res.status(StatusCodes.OK).send({
+            status: ORDER_STATE.SERVER_ERROR,
+            message: MESSAGE.SERVER_ERROR,
+            progress: ORDER_PROGRESS.SERVER_ERROR,
+          });
+        }
+      } catch (e) {
+        return res
+          .status(StatusCodes.INTERNAL_SERVER_ERROR)
+          .send({ error: e.message });
+      }
+    }
+  );
+
+  app.get(
+    "/api/v1/dalle/:id",
+    async (req: Request<{ id: string }, unknown, unknown, unknown>, res) => {
+      const { id } = req.params;
+
+      console.log("ID", id);
+
+      // 1. Get order from database
+      const order = await findOrderByUUID(id);
+
+      // 2. If images have been generated, send them to user
+      if (order.results) {
+        return res.status(StatusCodes.OK).send({
+          status: ORDER_STATE.DALLE_GENERATED,
+          message: MESSAGE.DALLE_GENERATED,
+          progress: ORDER_PROGRESS.DALLE_GENERATED,
+          images: order.results,
+        });
+      } else {
+        // 3. Get job from queue and send progress to user
+        let job: Job = await generationQueue.getJob(id);
+        return res.status(StatusCodes.OK).send({
+          status: job.data.status,
+          message: job.data.message,
+          progress: job.progress,
+          images: [],
+        });
+      }
+    }
+  );
+
+  // @ts-ignore
+  app.use(boltwall({ minAmount: UNIT_PRICE, getInvoiceDescription }));
+
+  app.post(
+    "/api/v1/bulk",
+    async (
+      req: Request<
+        unknown,
+        unknown,
+        { amount: number; quantity: number },
+        unknown
+      >,
+      res
+    ) => {
+      console.log("bulk");
+      const { amount: price, quantity } = req.body;
+
+      // Validate price and quantity coming from request
+      if (
+        price !== getFinalPriceSats(quantity) ||
+        quantity < 1 ||
+        quantity > MAX_UNITS ||
+        price < UNIT_PRICE
+      ) {
+        return res.status(StatusCodes.BAD_REQUEST).send({
+          status: "Invalid price or quantity",
+          message: "Invalid price or quantity",
+        });
+      }
+
+      // 1. Get LSAT token from request (format: LSAT <macaroon>:<preimage>)
+      const token = req.headers.authorization;
+
+      // 2. Parse LSAT token
+      const lsat = Lsat.fromToken(token);
+
+      // 3. Check if lsat is satisfied
+      if (!lsat.isSatisfied()) {
+        console.log("LSAT is not satisfied!");
+        return res.status(StatusCodes.UNAUTHORIZED).send({
+          status: "LSAT is not satisfied!",
+          message: "LSAT is not satisfied!",
+        });
+      }
+
+      // 4. Check if LSAT is already in database
+      let lsatRow: LsatRow =
+        (await findLsatByToken(token)) ||
+        (await insertLsat(token, price, quantity, quantity));
+
+      // 5. If LSAT is in database, check if it has remaining quantity
+      if (lsatRow && lsatRow.remaining_quantity <= 0) {
+        return res.status(StatusCodes.BAD_REQUEST).send({
+          status: "LSAT has no remaining quantity",
+          message: "LSAT has no remaining quantity",
+        });
+      }
+
+      return res.status(StatusCodes.CREATED).send({
+        status: "success",
+        message: `Your LSAT is valid for ${lsatRow.remaining_quantity} more ${
+          lsatRow.remaining_quantity > 1 ? "generations" : "generation"
+        }`,
+        quantity: lsatRow.remaining_quantity,
+      });
+
+      //   // 6. Create new order in database
+      //   const { data, error } = await supabase
+      //     .from<Order>("Orders")
+      //     .insert({
+      //       // invoice_id: invoice.id,
+      //       // invoice_request: invoice.request,
+      //       lsat_id: lsatRow.id,
+      //       satoshis: UNIT_PRICE,
+      //       prompt: prompt,
+      //       environment: process.env.NODE_ENV,
+      //     })
+      //     .single();
+
+      //   console.log(data);
+
+      //   // 5. If job is not in queue, add it to the queue
+      //   let job: Job = await generationQueue.add(
+      //     "generate",
+      //     {
+      //       prompt,
+      //     },
+      //     {
+      //       attempts: 20, // Something else is most likely wrong at this point
+      //       backoff: {
+      //         type: "fixed",
+      //         delay: 2000,
+      //       },
+      //       jobId: data.uuid,
+      //     }
+      //   );
+      //   await job.updateProgress(ORDER_PROGRESS.INVOICE_NOT_PAID);
+      //   await job.update({
+      //     ...job.data,
+      //     message: MESSAGE.DALLE_GENERATING,
+      //   });
+
+      //   // Immediately decrement remaining quantity of LSAT so they can't double generate
+      //   const { data: data2, error: error2 } = await supabase.rpc(
+      //     "decrement_quantity",
+      //     {
+      //       token,
+      //     }
+      //   );
+
+      //   console.log(data2);
+      //   if (error) throw error;
+
+      //   return res.status(StatusCodes.OK).send({
+      //     status: "success",
+      //     message: "Generation started... GET $url to monitor progress",
+      //     id: data.uuid,
+      //     url: getHost(req) + "/api/v1/dalle/" + data.uuid,
+      //   });
+    }
+  );
+
+  app.post(
+    "/api/v1/dalle",
+    async (
+      req: Request<unknown, unknown, { prompt: string }, unknown>,
+      res
+    ) => {
+      const { prompt } = req.body;
+
+      // 1. Get LSAT token from request (format: LSAT <macaroon>:<preimage>)
+      const token = req.headers.authorization;
+
+      // 2. Parse LSAT token
+      const lsat = Lsat.fromToken(token);
+
+      // 3. Check if lsat is satisfied
+      if (!lsat.isSatisfied()) {
+        console.log("LSAT is not satisfied!");
+        return res.status(StatusCodes.UNAUTHORIZED).send({
+          status: "LSAT is not satisfied!",
+          message: "LSAT is not satisfied!",
+        });
+      }
+
+      // 4. Get LSAT from database
+      let lsatRow: LsatRow = await findLsatByToken(token);
+
+      // 5. If LSAT is in database, check if it has remaining quantity
+      if (lsatRow && lsatRow.remaining_quantity <= 0) {
+        return res.status(StatusCodes.BAD_REQUEST).send({
+          status: "LSAT has no remaining quantity",
+          message: "LSAT has no remaining quantity",
+        });
+      }
+
+      // 6. Create new order in database
+      const { data, error } = await supabase
+        .from<Order>("Orders")
+        .insert({
+          // invoice_id: invoice.id,
+          // invoice_request: invoice.request,
+          lsat_id: lsatRow.id,
+          // satoshis: Math.floor(lsatRow.price / lsatRow.purchase_quantity),
+          prompt: prompt,
+          environment: process.env.NODE_ENV,
+        })
+        .single();
+
+      // 5. If job is not in queue, add it to the queue
+      let job: Job = await generationQueue.add(
+        "generate",
+        {
+          prompt,
+        },
+        {
+          attempts: 20, // Something else is most likely wrong at this point
+          backoff: {
+            type: "fixed",
+            delay: 2000,
+          },
+          jobId: data.uuid,
+        }
+      );
+      await job.updateProgress(ORDER_PROGRESS.INVOICE_NOT_PAID);
+      await job.update({
+        ...job.data,
+        message: MESSAGE.DALLE_GENERATING,
+      });
+
+      // Immediately decrement remaining quantity of LSAT so they can't double generate
+      const { data: data2, error: error2 } = await supabase.rpc(
+        "decrement_quantity",
+        {
+          token,
+        }
+      );
+
+      console.log(data2);
+      if (error) throw error;
+
+      return res.status(StatusCodes.OK).send({
+        status: "success",
+        message: "Generation started... GET $url to monitor progress",
+        id: data.uuid,
+        url: getHost(req) + "/api/v1/dalle/" + data.uuid,
+      });
+    }
+  );
+
+  app.post(
+    "/v2/generate",
+    async (
+      req: Request<
+        unknown,
+        unknown,
+        { amount: number; quantity: number },
+        unknown
+      >,
+      res
+    ) => {
+      // 1. Get LSAT token from request (format: LSAT <macaroon>:<preimage>)
+      const token = req.headers.authorization;
+
+      // 2. Parse LSAT token
+      const lsat = Lsat.fromToken(token);
+
+      // 3. Check if lsat is satisfied
+      if (!lsat.isSatisfied()) {
+        console.log("LSAT is not satisfied!");
+        return res.status(StatusCodes.UNAUTHORIZED).send({
+          status: "LSAT is not satisfied!",
+          message: "LSAT is not satisfied!",
+        });
+      }
+
+      // 4. Check if LSAT is already in database
+      let lsatRow: LsatRow = await findLsatByToken(token);
+
+      // 5. If LSAT is not in database, add it
+      if (!lsatRow) {
+        const { amount: price, quantity } = req.body;
+
+        // Validate price and quantity
+        if (
+          price < 0 ||
+          quantity < 0 ||
+          (process.env.NODE_ENV === "production" &&
+            price / quantity < UNIT_COST)
+        ) {
+          // TODO: Add better price and quantity validation
+          // TODO: Check against our pricing plan to ensure price and quantity are correct
+          return res.status(StatusCodes.BAD_REQUEST).send({
+            status: "Invalid price or quantity",
+            message: "Invalid price or quantity",
+          });
+        }
+        lsatRow = await insertLsat(token, price, quantity, quantity);
+      }
+
+      // 5. If LSAT is in database, check if it has remaining quantity
+      if (lsatRow && lsatRow.remaining_quantity <= 0) {
+        return res.status(StatusCodes.BAD_REQUEST).send({
+          status: "LSAT has no remaining quantity",
+          message: "LSAT has no remaining quantity",
+        });
+      }
+
+      console.log("inserted lsat");
+      console.log("we are now processing job");
+
+      const id = lsat.paymentHash;
+
+      try {
+        // get invoice from lnd
+        const invoice = await lightning.getInvoice(id);
+
+        // Check if invoice found (sanity check)
+        if (!invoice)
+          return res.status(StatusCodes.NOT_FOUND).send({
+            status: ORDER_STATE.INVOICE_NOT_FOUND,
+            message: MESSAGE.INVOICE_NOT_FOUND,
+          });
+
+        // Check if invoice is paid
+        if (!invoice.is_confirmed) {
+          console.log({
+            status: ORDER_STATE.INVOICE_NOT_PAID,
+            message: MESSAGE.INVOICE_NOT_PAID,
+            progress: ORDER_PROGRESS.INVOICE_NOT_PAID,
+            invoice: invoice.request,
+          });
+          return res.status(StatusCodes.OK).send({
+            status: ORDER_STATE.INVOICE_NOT_PAID,
+            message: MESSAGE.INVOICE_NOT_PAID,
+            progress: ORDER_PROGRESS.INVOICE_NOT_PAID,
+          });
+        }
+
+        // // 1. Check if image has already been generated
+        // const { data: order, error } = await supabase
+        //   .from<LsatTable>("lsats")
+        //   .select("*")
+        //   .match({ token })
+        //   .limit(1)
+        //   .single();
+
+        // 1. Check if image has already been generated
+        const { data: order, error } = await supabase
+          .from<Order>("Orders")
+          .select("*")
+          .match({ lsat_id: lsatRow.id })
+          .limit(1)
+          .single();
+
+        if (error) {
+          console.error("Error getting order: ", error);
+          return res
+            .status(StatusCodes.INTERNAL_SERVER_ERROR)
+            .send({ status: ORDER_STATE.SERVER_ERROR, message: error.message });
+        }
+
+        // 2. If image has been generated, send it to user
+        if (order.results) {
+          return res.status(StatusCodes.OK).send({
+            status: ORDER_STATE.DALLE_GENERATED,
+            message: MESSAGE.DALLE_GENERATED,
+            progress: ORDER_PROGRESS.DALLE_GENERATED,
+            images: order.results,
+          });
+        }
+
+        let job: Job;
+        // 4. If invoice has been paid, check the generation queue
+        job = await generationQueue.getJob(id);
+
+        // 3. If image has not been generated, check if invoice has been paid
+        if (invoice.is_confirmed) {
+          if (process.env.MOCK_IMAGES === "true") {
+            await sleep(2000);
+            return res.status(StatusCodes.OK).send({
+              status: ORDER_STATE.DALLE_GENERATED,
+              message: MESSAGE.DALLE_GENERATED,
+              images: [
+                "https://cdn.openai.com/labs/images/3D%20render%20of%20a%20cute%20tropical%20fish%20in%20an%20aquarium%20on%20a%20dark%20blue%20background,%20digital%20art.webp?v=1",
+                "https://cdn.openai.com/labs/images/An%20armchair%20in%20the%20shape%20of%20an%20avocado.webp?v=1",
+                "https://cdn.openai.com/labs/images/An%20expressive%20oil%20painting%20of%20a%20basketball%20player%20dunking,%20depicted%20as%20an%20explosion%20of%20a%20nebula.webp?v=1",
+                "https://cdn.openai.com/labs/images/A%20photo%20of%20a%20white%20fur%20monster%20standing%20in%20a%20purple%20room.webp?v=1",
+              ],
+            });
+          }
+
+          if (!job) {
+            // 5. If job is not in queue, add it to the queue
+            job = await generationQueue.add(
+              "generate",
+              {
+                prompt: order.prompt,
+              },
+              {
+                attempts: 20, // Something else is most likely wrong at this point
+                backoff: {
+                  type: "fixed",
+                  delay: 2000,
+                },
+                jobId: id,
+              }
+            );
+            await job.updateProgress(ORDER_PROGRESS.INVOICE_NOT_PAID);
+            await job.update({
+              ...job.data,
+              message: MESSAGE.DALLE_GENERATING,
+            });
+
+            const { data, error } = await supabase.rpc("decrement_quantity", {
+              token,
             });
           }
 
