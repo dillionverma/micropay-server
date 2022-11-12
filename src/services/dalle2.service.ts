@@ -1,6 +1,7 @@
 import axios, { AxiosRequestHeaders } from "axios";
 import { assert } from "console";
 import fs from "fs";
+
 interface RequestBody {
   task_type: string;
   prompt: {
@@ -9,9 +10,41 @@ interface RequestBody {
   };
 }
 
+interface ModerationRequestBody {
+  input: string;
+}
+
 export interface ImageGenerations {
   object: string;
   data: ImageGeneration[];
+}
+
+export interface Moderation {
+  id: string;
+  model: string;
+  results: [
+    {
+      categories: {
+        hate: boolean;
+        "hate/threatening": boolean;
+        "self-harm": boolean;
+        sexual: boolean;
+        "sexual/minors": boolean;
+        violence: boolean;
+        "violence/graphic": boolean;
+      };
+      category_scores: {
+        hate: number;
+        "hate/threatening": number;
+        "self-harm": number;
+        sexual: number;
+        "sexual/minors": number;
+        violence: number;
+        "violence/graphic": number;
+      };
+      flagged: boolean;
+    }
+  ];
 }
 
 export interface Task {
@@ -89,16 +122,23 @@ export interface GenerateResponse {
  */
 export default class Dalle2 {
   private bearerToken: string;
+  private secretKey: string;
   private url: string;
   private apiPrefix: string;
-  private headers: AxiosRequestHeaders;
+  private generationHeaders: AxiosRequestHeaders;
+  private moderationHeaders: AxiosRequestHeaders;
 
-  constructor(bearerToken: string) {
+  constructor(bearerToken: string, secretKey: string) {
     this.bearerToken = bearerToken;
+    this.secretKey = secretKey;
     this.url = "https://labs.openai.com";
     this.apiPrefix = "api/labs";
-    this.headers = {
+    this.generationHeaders = {
       Authorization: `Bearer ${this.bearerToken}`,
+      "Content-Type": "application/json",
+    };
+    this.moderationHeaders = {
+      Authorization: `Bearer ${this.secretKey}`,
       "Content-Type": "application/json",
     };
   }
@@ -120,7 +160,7 @@ export default class Dalle2 {
   async download(generationId: string): Promise<Buffer> {
     const response = await axios(this.downloadUrl(generationId), {
       method: "GET",
-      headers: this.headers,
+      headers: this.generationHeaders,
       responseType: "arraybuffer",
     });
     return response.data;
@@ -152,7 +192,7 @@ export default class Dalle2 {
       `${this.url}/${this.apiPrefix}/generations/${generationId}/share`,
       {
         method: "POST",
-        headers: this.headers,
+        headers: this.generationHeaders,
       }
     );
 
@@ -169,6 +209,25 @@ export default class Dalle2 {
    * @param prompt the prompt to generate the image
    * @returns {Promise<Task>} the task
    */
+
+  async checkPrompt(prompt: string) {
+    const requestBody: ModerationRequestBody = {
+      input: prompt,
+    };
+    try {
+      const res = await axios(`https://api.openai.com/v1/moderations`, {
+        method: "POST",
+        headers: this.moderationHeaders,
+        data: requestBody,
+      });
+      const data: Moderation = await res.data;
+      console.log(JSON.stringify(data, null, 2));
+      return data["results"][0]["flagged"] ? true : false;
+    } catch (err) {
+      throw err;
+    }
+  }
+
   async createTask(prompt: string): Promise<Task> {
     let task: Task;
 
@@ -176,7 +235,7 @@ export default class Dalle2 {
     try {
       const response = await axios(`${this.url}/${this.apiPrefix}/tasks`, {
         method: "POST",
-        headers: this.headers,
+        headers: this.generationHeaders,
         data: {
           task_type: "text2im",
           prompt: {
@@ -213,7 +272,7 @@ export default class Dalle2 {
       `${this.url}/${this.apiPrefix}/tasks/${taskId}`,
       {
         method: "GET",
-        headers: this.headers,
+        headers: this.generationHeaders,
       }
     );
     return response.data;
@@ -228,7 +287,7 @@ export default class Dalle2 {
       `${this.url}/${this.apiPrefix}/billing/credit_summary`,
       {
         method: "GET",
-        headers: this.headers,
+        headers: this.generationHeaders,
       }
     );
     return response.data;
@@ -325,7 +384,7 @@ export default class Dalle2 {
         `${this.url}/${this.apiPrefix}/billing/credit_summary`,
         {
           method: "GET",
-          headers: this.headers,
+          headers: this.generationHeaders,
           validateStatus: () => true, // don't throw exception if status < 100 or status > 300 (default behavior).
         }
       );
