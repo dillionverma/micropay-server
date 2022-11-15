@@ -308,8 +308,9 @@ export const init = (config: Config) => {
   /**
    * @param {string} id - Invoice id
    */
-  app.get("/generate/:id/status/:weblnEnabled", async (req, res) => {
-    const { id, weblnEnabled } = req.params;
+  app.get("/generate/:id/status", async (req, res) => {
+    const { id } = req.params;
+    const { webln } = req.query;
     try {
       // get invoice from lnd
       const invoice = await lightning.getInvoice(id);
@@ -321,7 +322,7 @@ export const init = (config: Config) => {
           message: MESSAGE.INVOICE_NOT_FOUND,
         });
 
-      if (weblnEnabled && !invoice.is_confirmed) {
+      if (webln && !invoice.is_confirmed) {
         console.log({
           status: ORDER_STATE.WEBLN_WALLET_DETECTED,
           message: MESSAGE.WEBLN_WALLET_DETECTED,
@@ -410,7 +411,7 @@ export const init = (config: Config) => {
               jobId: id,
             }
           );
-          await job.updateProgress(ORDER_PROGRESS.INVOICE_NOT_PAID);
+          await job.updateProgress(ORDER_PROGRESS.DALLE_GENERATING);
           await job.update({
             ...job.data,
             message: MESSAGE.DALLE_GENERATING,
