@@ -17,6 +17,7 @@ export enum ENV_KEYS {
   LND_MACAROON_INVOICE = "lndMacaroonInvoice",
   LND_TLS_CERT = "lndTlsCert",
   DALLE_API_KEY = "dalleApiKey",
+  DALLE_SECRET_KEY = "dalleSecretKey",
   DALLE_QUEUE_NAME = "dalleQueueName",
   DALLE_QUEUE_CONCURRENCY = "dalleQueueConcurrency",
   REDIS_CONNECTION_STRING = "redisConnectionString",
@@ -48,6 +49,7 @@ export interface Config {
   [ENV_KEYS.LND_MACAROON_INVOICE]: string;
   [ENV_KEYS.LND_TLS_CERT]: string;
   [ENV_KEYS.DALLE_API_KEY]: string;
+  [ENV_KEYS.DALLE_SECRET_KEY]: string;
   [ENV_KEYS.DALLE_QUEUE_NAME]: string;
   [ENV_KEYS.DALLE_QUEUE_CONCURRENCY]: string;
   [ENV_KEYS.REDIS_CONNECTION_STRING]: string;
@@ -82,6 +84,7 @@ export const config: Config = {
   [ENV_KEYS.LND_MACAROON_INVOICE]: process.env.LND_MACAROON_INVOICE,
   [ENV_KEYS.LND_TLS_CERT]: process.env.LND_TLS_CERT,
   [ENV_KEYS.DALLE_API_KEY]: process.env.DALLE_API_KEY,
+  [ENV_KEYS.DALLE_SECRET_KEY]: process.env.DALLE_SECRET_KEY,
   [ENV_KEYS.DALLE_QUEUE_NAME]: process.env.DALLE_QUEUE_NAME,
   [ENV_KEYS.DALLE_QUEUE_CONCURRENCY]:
     process.env.DALLE_QUEUE_CONCURRENCY || "20",

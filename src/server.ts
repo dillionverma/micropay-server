@@ -24,7 +24,7 @@ export const aws = new AWS(
   config.awsSecretKey,
   BUCKET_NAME
 );
-export const dalle2 = new Dalle2(config.dalleApiKey);
+export const dalle2 = new Dalle2(config.dalleApiKey, config.dalleSecretKey);
 
 export const telegramBot = new TelegramBot(
   config.telegramPrivateNotifierBotToken,
@@ -82,6 +82,20 @@ export const ORDER_PROGRESS: { [key in ORDER_STATE]?: number } = {
   INVOICE_CANCELLED: -1,
   USER_ERROR: -1,
   SERVER_ERROR: -1,
+};
+
+const sendMockImages = (res, prompt, flagged) => {
+  res.status(StatusCodes.OK).send({
+    status: ORDER_STATE.DALLE_GENERATED,
+    message: MESSAGE.DALLE_GENERATED,
+    data: { prompt, flagged },
+    images: [
+      "https://cdn.openai.com/labs/images/3D%20render%20of%20a%20cute%20tropical%20fish%20in%20an%20aquarium%20on%20a%20dark%20blue%20background,%20digital%20art.webp?v=1",
+      "https://cdn.openai.com/labs/images/An%20armchair%20in%20the%20shape%20of%20an%20avocado.webp?v=1",
+      "https://cdn.openai.com/labs/images/An%20expressive%20oil%20painting%20of%20a%20basketball%20player%20dunking,%20depicted%20as%20an%20explosion%20of%20a%20nebula.webp?v=1",
+      "https://cdn.openai.com/labs/images/A%20photo%20of%20a%20white%20fur%20monster%20standing%20in%20a%20purple%20room.webp?v=1",
+    ],
+  });
 };
 
 export const init = (config: Config) => {
@@ -164,6 +178,12 @@ export const init = (config: Config) => {
     }
   );
 
+  app.post("/check-prompt", async (req, res) => {
+    const { prompt } = req.body;
+    const flagged = await dalle2.checkPrompt(prompt);
+    res.status(StatusCodes.OK).send(flagged);
+  });
+
   app.get("/dalle2-test", async (req, res) => {
     if (process.env.NODE_ENV === "production") {
       return res
@@ -175,24 +195,35 @@ export const init = (config: Config) => {
     const prompts = [
       "a store front that has the word 'openai' written on it",
       "an armchair in the shape of an avocado",
-      "a person wearing a mask and holding a sign that says 'I'm vaccinated'",
       "a male mannequin dressed in an orange and black flannel shirt and black jeans",
       "a female mannequin dressed in a black leather jacket and hold pleated skirt",
       "a living room with two white armchairs and a painting of the colosseum. the painting is mounted above a modern fireplace.",
       "a loft bedroom with a white bed next to a nightstand. there is a fish tank beside the bed.",
     ];
-
-    const vulgurPrompt = "test swearword: fuck giraffe (please don't ban)";
     const i = Math.floor(Math.random() * prompts.length);
 
+    let prompt = prompts[i];
+
     try {
-      const images = await dalle2.generate(prompts[i]);
-      // const images = await dalle2.generate(vulgurPrompt);
-      console.log(images);
-      res.status(StatusCodes.OK).send({ images });
+      let flagged = await dalle2.checkPrompt(prompt);
+      if (flagged) {
+        const ERROR_MESSAGE =
+          "Prompt is flagged by OpenAI's moderation system: ";
+        res.status(StatusCodes.BAD_REQUEST).send({ error: ERROR_MESSAGE });
+      } else {
+        if (process.env.MOCK_IMAGES === "true") {
+          return sendMockImages(res, prompt, flagged);
+        } else {
+          const images = await dalle2.generate(prompt);
+          console.log(images);
+          return res.status(StatusCodes.OK).send({ images });
+        }
+      }
     } catch (e) {
       if (e.error) {
-        res.status(StatusCodes.INTERNAL_SERVER_ERROR).send({ error: e.error });
+        res
+          .status(StatusCodes.INTERNAL_SERVER_ERROR)
+          .send({ error: JSON.stringify(e.error, null, 2) });
       }
       res.status(StatusCodes.INTERNAL_SERVER_ERROR).send({ error: e });
     }
@@ -395,18 +426,24 @@ export const init = (config: Config) => {
           });
         }
 
-        if (!job) {
-          // 5. If job is not in queue, add it to the queue
-          job = await generationQueue.add(
-            "generate",
-            {
-              prompt: order.prompt,
-            },
-            {
-              attempts: 20, // Something else is most likely wrong at this point
-              backoff: {
-                type: "fixed",
-                delay: 2000,
+        let job: Job;
+        // 4. If invoice has been paid, check the generation queue
+        job = await generationQueue.getJob(id);
+
+        // 3. If image has not been generated, check if invoice has been paid
+        if (invoice.is_confirmed) {
+          if (process.env.MOCK_IMAGES === "true") {
+            await sleep(2000);
+            return sendMockImages(res, order.prompt, flagged);
+          }
+
+          if (!job) {
+            // 5. If job is not in queue, add it to the queue
+            job = await generationQueue.add(
+              "generate",
+              {
+                prompt: order.prompt,
+
               },
               jobId: id,
             }
