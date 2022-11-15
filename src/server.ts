@@ -38,6 +38,7 @@ const DEFAULT_PRICE = process.env.NODE_ENV === "production" ? 1000 : 50;
 export enum ORDER_STATE {
   INVOICE_NOT_FOUND = "INVOICE_NOT_FOUND",
   INVOICE_NOT_PAID = "INVOICE_NOT_PAID",
+  WEBLN_WALLET_DETECTED = "WEBLN_WALLET_DETECTED",
 
   DALLE_GENERATING = "DALLE_GENERATING",
   DALLE_UPLOADING = "DALLE_UPLOADING",
@@ -54,6 +55,7 @@ export enum ORDER_STATE {
 export const MESSAGE: { [key in ORDER_STATE]: string } = {
   INVOICE_NOT_FOUND: "Invoice not found",
   INVOICE_NOT_PAID: "Order received! Waiting for payment...",
+  WEBLN_WALLET_DETECTED: "WebLN wallet detected! Waiting for confirmation",
 
   DALLE_GENERATING: "Invoice paid! Dalle-2 is currently generating images...",
   DALLE_UPLOADING: "Images generated! Uploading images to cloud...",
@@ -71,6 +73,7 @@ export const ORDER_PROGRESS: { [key in ORDER_STATE]?: number } = {
   INVOICE_NOT_FOUND: 0,
 
   INVOICE_NOT_PAID: 20,
+  WEBLN_WALLET_DETECTED: 40,
   DALLE_GENERATING: 60,
   DALLE_UPLOADING: 80,
   DALLE_SAVING: 90,
@@ -273,6 +276,13 @@ export const init = (config: Config) => {
     }
   );
 
+  //Write a function to accept a GET request for config.mockImages value from the config file
+  app.get("/mock-images", async (req, res) => {
+    if (process.env.NODE_ENV === "development") {
+      res.status(StatusCodes.OK).send(config.mockImages);
+    }
+  });
+
   app.post(
     "/refund",
     async (
@@ -329,59 +339,90 @@ export const init = (config: Config) => {
   /**
    * @param {string} id - Invoice id
    */
-  app.get(
-    "/generate/:id/status",
-    async (req: Request<{ id: string }, unknown, unknown, unknown>, res) => {
-      const { id } = req.params;
+  app.get("/generate/:id/status", async (req, res) => {
+    const { id } = req.params;
+    const { webln } = req.query;
+    try {
+      // get invoice from lnd
+      const invoice = await lightning.getInvoice(id);
 
-      try {
-        // get invoice from lnd
-        const invoice = await lightning.getInvoice(id);
+      // Check if invoice found (sanity check)
+      if (!invoice)
+        return res.status(StatusCodes.NOT_FOUND).send({
+          status: ORDER_STATE.INVOICE_NOT_FOUND,
+          message: MESSAGE.INVOICE_NOT_FOUND,
+        });
 
-        // Check if invoice found (sanity check)
-        if (!invoice)
-          return res.status(StatusCodes.NOT_FOUND).send({
-            status: ORDER_STATE.INVOICE_NOT_FOUND,
-            message: MESSAGE.INVOICE_NOT_FOUND,
-          });
+      if (webln && !invoice.is_confirmed) {
+        console.log({
+          status: ORDER_STATE.WEBLN_WALLET_DETECTED,
+          message: MESSAGE.WEBLN_WALLET_DETECTED,
+          progress: ORDER_PROGRESS.WEBLN_WALLET_DETECTED,
+          invoice: invoice.request,
+        });
+        return res.status(StatusCodes.OK).send({
+          status: ORDER_STATE.WEBLN_WALLET_DETECTED,
+          message: MESSAGE.WEBLN_WALLET_DETECTED,
+          progress: ORDER_PROGRESS.WEBLN_WALLET_DETECTED,
+        });
+      }
+      // Check if invoice is paid
+      if (!invoice.is_confirmed) {
+        console.log({
+          status: ORDER_STATE.INVOICE_NOT_PAID,
+          message: MESSAGE.INVOICE_NOT_PAID,
+          progress: ORDER_PROGRESS.INVOICE_NOT_PAID,
+          invoice: invoice.request,
+        });
+        return res.status(StatusCodes.OK).send({
+          status: ORDER_STATE.INVOICE_NOT_PAID,
+          message: MESSAGE.INVOICE_NOT_PAID,
+          progress: ORDER_PROGRESS.INVOICE_NOT_PAID,
+        });
+      }
 
-        // Check if invoice is paid
-        if (!invoice.is_confirmed) {
-          console.log({
-            status: ORDER_STATE.INVOICE_NOT_PAID,
-            message: MESSAGE.INVOICE_NOT_PAID,
-            progress: ORDER_PROGRESS.INVOICE_NOT_PAID,
-            invoice: invoice.request,
-          });
-          return res.status(StatusCodes.OK).send({
-            status: ORDER_STATE.INVOICE_NOT_PAID,
-            message: MESSAGE.INVOICE_NOT_PAID,
-            progress: ORDER_PROGRESS.INVOICE_NOT_PAID,
-          });
-        }
+      // 1. Check if image has already been generated
+      const { data: order, error } = await supabase
+        .from<Order>("Orders")
+        .select("*")
+        .match({ invoice_id: id })
+        .limit(1)
+        .single();
 
-        // 1. Check if image has already been generated
-        const { data: order, error } = await supabase
-          .from<Order>("Orders")
-          .select("*")
-          .match({ invoice_id: id })
-          .limit(1)
-          .single();
+      if (error) {
+        console.error("Error getting order: ", error);
+        return res
+          .status(StatusCodes.INTERNAL_SERVER_ERROR)
+          .send({ status: ORDER_STATE.SERVER_ERROR, message: error.message });
+      }
 
-        if (error) {
-          console.error("Error getting order: ", error);
-          return res
-            .status(StatusCodes.INTERNAL_SERVER_ERROR)
-            .send({ status: ORDER_STATE.SERVER_ERROR, message: error.message });
-        }
+      // 2. If image has been generated, send it to user
+      if (order.results) {
+        return res.status(StatusCodes.OK).send({
+          status: ORDER_STATE.DALLE_GENERATED,
+          message: MESSAGE.DALLE_GENERATED,
+          progress: ORDER_PROGRESS.DALLE_GENERATED,
+          images: order.results,
+        });
+      }
 
-        // 2. If image has been generated, send it to user
-        if (order.results) {
+      let job: Job;
+      // 4. If invoice has been paid, check the generation queue
+      job = await generationQueue.getJob(id);
+
+      // 3. If image has not been generated, check if invoice has been paid
+      if (invoice.is_confirmed) {
+        if (process.env.MOCK_IMAGES === "true") {
+          await sleep(2000);
           return res.status(StatusCodes.OK).send({
             status: ORDER_STATE.DALLE_GENERATED,
             message: MESSAGE.DALLE_GENERATED,
-            progress: ORDER_PROGRESS.DALLE_GENERATED,
-            images: order.results,
+            images: [
+              "https://cdn.openai.com/labs/images/3D%20render%20of%20a%20cute%20tropical%20fish%20in%20an%20aquarium%20on%20a%20dark%20blue%20background,%20digital%20art.webp?v=1",
+              "https://cdn.openai.com/labs/images/An%20armchair%20in%20the%20shape%20of%20an%20avocado.webp?v=1",
+              "https://cdn.openai.com/labs/images/An%20expressive%20oil%20painting%20of%20a%20basketball%20player%20dunking,%20depicted%20as%20an%20explosion%20of%20a%20nebula.webp?v=1",
+              "https://cdn.openai.com/labs/images/A%20photo%20of%20a%20white%20fur%20monster%20standing%20in%20a%20purple%20room.webp?v=1",
+            ],
           });
         }
 
@@ -402,51 +443,45 @@ export const init = (config: Config) => {
               "generate",
               {
                 prompt: order.prompt,
-              },
-              {
-                attempts: 20, // Something else is most likely wrong at this point
-                backoff: {
-                  type: "fixed",
-                  delay: 2000,
-                },
-                jobId: id,
-              }
-            );
-            await job.updateProgress(ORDER_PROGRESS.INVOICE_NOT_PAID);
-            await job.update({
-              ...job.data,
-              message: MESSAGE.DALLE_GENERATING,
-            });
-          }
 
-          // 6. If job is in queue, but not done, send progress
-          return res.status(StatusCodes.OK).send({
-            status: job.data.status,
-            message: job.data.message,
-            progress: job.progress,
-            images: [],
-          });
-        } else if (invoice.is_canceled) {
-          return res.status(StatusCodes.OK).send({
-            status: ORDER_STATE.INVOICE_CANCELLED,
-            message: MESSAGE.INVOICE_CANCELLED,
-            progress: ORDER_PROGRESS.INVOICE_CANCELLED,
-          });
-        } else {
-          console.error("SERVER ERROR 1");
-          return res.status(StatusCodes.OK).send({
-            status: ORDER_STATE.SERVER_ERROR,
-            message: MESSAGE.SERVER_ERROR,
-            progress: ORDER_PROGRESS.SERVER_ERROR,
+              },
+              jobId: id,
+            }
+          );
+          await job.updateProgress(ORDER_PROGRESS.DALLE_GENERATING);
+          await job.update({
+            ...job.data,
+            message: MESSAGE.DALLE_GENERATING,
           });
         }
-      } catch (e) {
-        return res
-          .status(StatusCodes.INTERNAL_SERVER_ERROR)
-          .send({ error: e.message });
+
+        // 6. If job is in queue, but not done, send progress
+        return res.status(StatusCodes.OK).send({
+          status: job.data.status,
+          message: job.data.message,
+          progress: job.progress,
+          images: [],
+        });
+      } else if (invoice.is_canceled) {
+        return res.status(StatusCodes.OK).send({
+          status: ORDER_STATE.INVOICE_CANCELLED,
+          message: MESSAGE.INVOICE_CANCELLED,
+          progress: ORDER_PROGRESS.INVOICE_CANCELLED,
+        });
+      } else {
+        console.error("SERVER ERROR 1");
+        return res.status(StatusCodes.OK).send({
+          status: ORDER_STATE.SERVER_ERROR,
+          message: MESSAGE.SERVER_ERROR,
+          progress: ORDER_PROGRESS.SERVER_ERROR,
+        });
       }
+    } catch (e) {
+      return res
+        .status(StatusCodes.INTERNAL_SERVER_ERROR)
+        .send({ error: e.message });
     }
-  );
+  });
 
   app.use(Sentry.Handlers.errorHandler());
 
