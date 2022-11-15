@@ -443,11 +443,10 @@ export const init = (config: Config) => {
               "generate",
               {
                 prompt: order.prompt,
-
               },
-              jobId: id,
-            }
-          );
+              { jobId: id }
+            );
+          }
           await job.updateProgress(ORDER_PROGRESS.DALLE_GENERATING);
           await job.update({
             ...job.data,
