@@ -14,6 +14,7 @@ export type Order = {
   refundInvoice: string;
   rating: number;
   feedback: string;
+  email: string;
 };
 
 export const supabase = createClient(config.supabaseUrl, config.supabaseApiKey);
