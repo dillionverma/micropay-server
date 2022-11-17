@@ -10,12 +10,20 @@ import Lightning from "./services/lightning.service";
 import Sentry from "./services/sentry.service";
 import { Order, supabase } from "./services/supabase.service";
 import { TelegramBot } from "./services/telegram.service";
+import Twitter from "./services/twitter.service";
 import { sleep } from "./utils";
 
 export const lightning = new Lightning(
   config.lndMacaroonInvoice,
   config.lndHost,
   config.lndPort
+);
+
+const twitter = new Twitter(
+  config.twitterAppKey,
+  config.twitterAppSecret,
+  config.twitterAccessToken,
+  config.twitterAccessSecret
 );
 
 export const BUCKET_NAME = "dalle2-lightning";
@@ -244,6 +252,11 @@ export const init = (config: Config) => {
       });
     }
   );
+
+  app.get("/tweet-test", async (req, res) => {
+    await twitter.tweet("Hello World 2");
+    res.status(StatusCodes.OK).send("Tweeted");
+  });
 
   app.post(
     "/feedback",
