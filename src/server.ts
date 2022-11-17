@@ -251,16 +251,16 @@ export const init = (config: Config) => {
       req: Request<
         unknown,
         unknown,
-        { invoiceId: string; rating: number; feedback: string },
+        { invoiceId: string; rating: number; feedback: string; email: string },
         unknown
       >,
       res
     ) => {
-      const { invoiceId, rating, feedback } = req.body;
+      const { invoiceId, rating, feedback, email } = req.body;
       // Update order to indicate that images have been generated
       const { data: updatedOrder, error } = await supabase
         .from<Order>("Orders")
-        .update({ rating, feedback })
+        .update({ rating, feedback, email })
         .match({ invoice_id: invoiceId })
         .single();
 
