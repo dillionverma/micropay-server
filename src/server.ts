@@ -253,8 +253,8 @@ export const init = (config: Config) => {
     }
   );
 
-  app.get("/tweet-test", async (req, res) => {
-    await twitter.tweet("Hello World 2");
+  app.post("/tweet-test", async (req, res) => {
+    await twitter.tweet(req.body.tweet);
     res.status(StatusCodes.OK).send("Tweeted");
   });
 
