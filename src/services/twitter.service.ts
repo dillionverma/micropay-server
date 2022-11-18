@@ -53,7 +53,7 @@ export default class Twitter {
     const nouns = this.tokenizePrompt(prompt);
     const promptHashtags = "#" + nouns.join(" #");
     prompt +=
-      "\n\nGenerated at https://micropay.ai \n\n#micropayment #dalle2 #art #AI ";
+      "\n\nGenerated at https://micropay.ai with #Bitcoin \n\n#micropayment #dalle2 #art #AI ";
     prompt += promptHashtags;
     let mediaIds: string[] = [];
 
