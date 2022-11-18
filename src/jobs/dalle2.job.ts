@@ -10,6 +10,7 @@ import {
   ORDER_PROGRESS,
   ORDER_STATE,
   telegramBot,
+  twitter,
 } from "../server";
 import { GenerateResponse } from "../services/dalle2.service";
 import { connection } from "../services/redis.service";
@@ -106,6 +107,9 @@ export const generationWorker = new Worker<GenerateJob>(
     try {
       await telegramBot.sendImagesToGroup(images, prompt);
       await telegramBot.sendMessageToAdmins(text);
+      setTimeout(async () => {
+        await twitter.tweetImages(images, prompt);
+      }, 2000);
     } catch (e) {
       console.error("Posting to telegram failed");
       console.error(e);
