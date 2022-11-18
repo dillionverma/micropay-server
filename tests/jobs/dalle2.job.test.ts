@@ -9,7 +9,7 @@ import {
   generationQueue,
   generationWorker,
 } from "../../src/jobs/dalle2.job";
-import { aws, dalle2, lightning, telegramBot } from "../../src/server";
+import { aws, dalle2, lightning } from "../../src/server";
 import { getNRandomElements } from "../../src/utils";
 import { officialPrompts } from "../services/dalle2.service.test";
 
@@ -25,8 +25,6 @@ describe("Dalle2 Job", () => {
   let dalle2Spy: SinonStub;
   let lightningSpy: SinonStub;
   let awsSpy: SinonStub;
-  let telegramAdminMessageSpy: SinonStub;
-  let telegramGroupSpy: SinonStub;
 
   before(async () => {
     await generationQueue.obliterate();
@@ -37,8 +35,6 @@ describe("Dalle2 Job", () => {
       dalle2Spy.restore();
       lightningSpy.restore();
       awsSpy.restore();
-      telegramAdminMessageSpy.restore();
-      telegramGroupSpy.restore();
     });
 
     it("should successfully generate images, upload to s3, and ping telegram", async () => {
@@ -114,13 +110,6 @@ describe("Dalle2 Job", () => {
 
       awsSpy = sinon.stub(aws, "uploadImageBufferToS3").resolves("test.png");
 
-      telegramAdminMessageSpy = sinon
-        .stub(telegramBot, "sendMessageToAdmins")
-        .resolves();
-      telegramGroupSpy = sinon
-        .stub(telegramBot, "sendImagesToGroup")
-        .resolves();
-
       const job = await generationQueue.add(
         "generate",
         {
@@ -140,8 +129,6 @@ describe("Dalle2 Job", () => {
 
       expect(await job.getState()).to.equal("completed");
       expect(awsSpy).to.have.callCount(4);
-      expect(telegramAdminMessageSpy).to.have.been.calledOnce;
-      expect(telegramGroupSpy).to.have.been.calledOnce;
     });
   });
 
