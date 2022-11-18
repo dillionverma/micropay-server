@@ -10,6 +10,7 @@ import {
   ORDER_PROGRESS,
   ORDER_STATE,
   telegramBot,
+  twitter,
 } from "../server";
 import { GenerateResponse } from "../services/dalle2.service";
 import { connection } from "../services/redis.service";
@@ -93,22 +94,23 @@ export const generationWorker = new Worker<GenerateJob>(
         console.error(error);
         throw error;
       }
-    }
 
-    // Send telegram message
-    const text = `
+      // Send telegram message
+      const text = `
       Received new order!
       Prompt: "${prompt}"
       Invoice ID: ${invoice?.id}
       Satoshis: ${invoice?.tokens}
       `;
 
-    try {
-      await telegramBot.sendImagesToGroup(images, prompt);
-      await telegramBot.sendMessageToAdmins(text);
-    } catch (e) {
-      console.error("Posting to telegram failed");
-      console.error(e);
+      try {
+        await telegramBot.sendImagesToGroup(images, prompt);
+        await telegramBot.sendMessageToAdmins(text);
+        await twitter.tweetImages(images, prompt);
+      } catch (e) {
+        console.error("Posting to telegram failed");
+        console.error(e);
+      }
     }
   },
   {

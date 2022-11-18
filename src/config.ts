@@ -38,6 +38,10 @@ export enum ENV_KEYS {
   MOCK_IMAGES = "mockImages",
   GITHUB_CI_TOKEN = "githubCIToken",
   CODECOV_TOKEN = "codecovToken",
+  TWITTER_APP_KEY = "twitterAppKey",
+  TWITTER_APP_SECRET = "twitterAppSecret",
+  TWITTER_ACCESS_TOKEN = "twitterAccessToken",
+  TWITTER_ACCESS_SECRET = "twitterAccessSecret",
 }
 
 export interface Config {
@@ -70,6 +74,10 @@ export interface Config {
   [ENV_KEYS.MOCK_IMAGES]: string;
   [ENV_KEYS.GITHUB_CI_TOKEN]: string;
   [ENV_KEYS.CODECOV_TOKEN]: string;
+  [ENV_KEYS.TWITTER_APP_KEY]: string;
+  [ENV_KEYS.TWITTER_APP_SECRET]: string;
+  [ENV_KEYS.TWITTER_ACCESS_TOKEN]: string;
+  [ENV_KEYS.TWITTER_ACCESS_SECRET]: string;
 }
 
 export const config: Config = {
@@ -110,4 +118,8 @@ export const config: Config = {
     process.env.NODE_ENV === "production" ? null : process.env.GITHUB_CI_TOKEN,
   [ENV_KEYS.CODECOV_TOKEN]:
     process.env.NODE_ENV === "production" ? null : process.env.CODECOV_TOKEN,
+  [ENV_KEYS.TWITTER_APP_KEY]: process.env.TWITTER_APP_KEY,
+  [ENV_KEYS.TWITTER_APP_SECRET]: process.env.TWITTER_APP_SECRET,
+  [ENV_KEYS.TWITTER_ACCESS_TOKEN]: process.env.TWITTER_ACCESS_TOKEN,
+  [ENV_KEYS.TWITTER_ACCESS_SECRET]: process.env.TWITTER_ACCESS_SECRET,
 };

@@ -10,12 +10,20 @@ import Lightning from "./services/lightning.service";
 import Sentry from "./services/sentry.service";
 import { Order, supabase } from "./services/supabase.service";
 import { TelegramBot } from "./services/telegram.service";
+import Twitter from "./services/twitter.service";
 import { sleep } from "./utils";
 
 export const lightning = new Lightning(
   config.lndMacaroonInvoice,
   config.lndHost,
   config.lndPort
+);
+
+export const twitter = new Twitter(
+  config.twitterAppKey,
+  config.twitterAppSecret,
+  config.twitterAccessToken,
+  config.twitterAccessSecret
 );
 
 export const BUCKET_NAME = "dalle2-lightning";
@@ -84,17 +92,17 @@ export const ORDER_PROGRESS: { [key in ORDER_STATE]?: number } = {
   SERVER_ERROR: -1,
 };
 
-const sendMockImages = (res, prompt, flagged) => {
-  res.status(StatusCodes.OK).send({
+const sendMockImages = async (res, prompt) => {
+  const images = [
+    "https://cdn.openai.com/labs/images/3D%20render%20of%20a%20cute%20tropical%20fish%20in%20an%20aquarium%20on%20a%20dark%20blue%20background,%20digital%20art.webp?v=1",
+    "https://cdn.openai.com/labs/images/An%20armchair%20in%20the%20shape%20of%20an%20avocado.webp?v=1",
+    "https://cdn.openai.com/labs/images/An%20expressive%20oil%20painting%20of%20a%20basketball%20player%20dunking,%20depicted%20as%20an%20explosion%20of%20a%20nebula.webp?v=1",
+    "https://cdn.openai.com/labs/images/A%20photo%20of%20a%20white%20fur%20monster%20standing%20in%20a%20purple%20room.webp?v=1",
+  ];
+  await res.status(StatusCodes.OK).send({
     status: ORDER_STATE.DALLE_GENERATED,
     message: MESSAGE.DALLE_GENERATED,
-    data: { prompt, flagged },
-    images: [
-      "https://cdn.openai.com/labs/images/3D%20render%20of%20a%20cute%20tropical%20fish%20in%20an%20aquarium%20on%20a%20dark%20blue%20background,%20digital%20art.webp?v=1",
-      "https://cdn.openai.com/labs/images/An%20armchair%20in%20the%20shape%20of%20an%20avocado.webp?v=1",
-      "https://cdn.openai.com/labs/images/An%20expressive%20oil%20painting%20of%20a%20basketball%20player%20dunking,%20depicted%20as%20an%20explosion%20of%20a%20nebula.webp?v=1",
-      "https://cdn.openai.com/labs/images/A%20photo%20of%20a%20white%20fur%20monster%20standing%20in%20a%20purple%20room.webp?v=1",
-    ],
+    images: images,
   });
 };
 
@@ -212,7 +220,7 @@ export const init = (config: Config) => {
         res.status(StatusCodes.BAD_REQUEST).send({ error: ERROR_MESSAGE });
       } else {
         if (process.env.MOCK_IMAGES === "true") {
-          return sendMockImages(res, prompt, flagged);
+          return sendMockImages(res, prompt);
         } else {
           const images = await dalle2.generate(prompt);
           console.log(images);
@@ -413,16 +421,17 @@ export const init = (config: Config) => {
       // 3. If image has not been generated, check if invoice has been paid
       if (invoice.is_confirmed) {
         if (process.env.MOCK_IMAGES === "true") {
-          await sleep(2000);
+          const images = [
+            "https://cdn.openai.com/labs/images/3D%20render%20of%20a%20cute%20tropical%20fish%20in%20an%20aquarium%20on%20a%20dark%20blue%20background,%20digital%20art.webp?v=1",
+            "https://cdn.openai.com/labs/images/An%20armchair%20in%20the%20shape%20of%20an%20avocado.webp?v=1",
+            "https://cdn.openai.com/labs/images/An%20expressive%20oil%20painting%20of%20a%20basketball%20player%20dunking,%20depicted%20as%20an%20explosion%20of%20a%20nebula.webp?v=1",
+            "https://cdn.openai.com/labs/images/A%20photo%20of%20a%20white%20fur%20monster%20standing%20in%20a%20purple%20room.webp?v=1",
+          ];
+
           return res.status(StatusCodes.OK).send({
             status: ORDER_STATE.DALLE_GENERATED,
             message: MESSAGE.DALLE_GENERATED,
-            images: [
-              "https://cdn.openai.com/labs/images/3D%20render%20of%20a%20cute%20tropical%20fish%20in%20an%20aquarium%20on%20a%20dark%20blue%20background,%20digital%20art.webp?v=1",
-              "https://cdn.openai.com/labs/images/An%20armchair%20in%20the%20shape%20of%20an%20avocado.webp?v=1",
-              "https://cdn.openai.com/labs/images/An%20expressive%20oil%20painting%20of%20a%20basketball%20player%20dunking,%20depicted%20as%20an%20explosion%20of%20a%20nebula.webp?v=1",
-              "https://cdn.openai.com/labs/images/A%20photo%20of%20a%20white%20fur%20monster%20standing%20in%20a%20purple%20room.webp?v=1",
-            ],
+            images: images,
           });
         }
 
@@ -434,7 +443,7 @@ export const init = (config: Config) => {
         if (invoice.is_confirmed) {
           if (process.env.MOCK_IMAGES === "true") {
             await sleep(2000);
-            return sendMockImages(res, order.prompt, flagged);
+            return sendMockImages(res, order.prompt);
           }
 
           if (!job) {
