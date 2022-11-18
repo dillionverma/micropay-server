@@ -4,14 +4,16 @@ import express, { Request } from "express";
 import { StatusCodes } from "http-status-codes";
 import { Config, config } from "./config";
 import { generationQueue } from "./jobs/dalle2.job";
+import { stableDiffusionQueue } from "./jobs/stableDiffusion.job";
 import AWS from "./services/aws.services";
 import Dalle2 from "./services/dalle2.service";
 import Lightning from "./services/lightning.service";
 import Sentry from "./services/sentry.service";
+import Stability from "./services/stableDiffusion.service";
 import { Order, supabase } from "./services/supabase.service";
 import { TelegramBot } from "./services/telegram.service";
 import Twitter from "./services/twitter.service";
-import { sleep } from "./utils";
+import { getHost, sleep } from "./utils";
 
 export const lightning = new Lightning(
   config.lndMacaroonInvoice,
@@ -27,12 +29,10 @@ export const twitter = new Twitter(
 );
 
 export const BUCKET_NAME = "dalle2-lightning";
-export const aws = new AWS(
-  config.awsAccessKey,
-  config.awsSecretKey,
-  BUCKET_NAME
-);
+
+export const aws = new AWS(config.awsAccessKey, config.awsSecretKey);
 export const dalle2 = new Dalle2(config.dalleApiKey, config.dalleSecretKey);
+export const stability = new Stability(config.stabilityApiKey);
 
 export const telegramBot = new TelegramBot(
   config.telegramPrivateNotifierBotToken,
@@ -157,6 +157,7 @@ export const init = (config: Config) => {
             satoshis: invoice.tokens,
             prompt: prompt,
             environment: process.env.NODE_ENV,
+            model: "dalle",
           },
         ]);
 
@@ -192,6 +193,91 @@ export const init = (config: Config) => {
     const flagged = await dalle2.checkPrompt(prompt);
     res.status(StatusCodes.OK).send(flagged);
   });
+
+  app.get("/test", async (req, res) => {
+    console.log(config);
+    const a = await aws.uploadImageBufferToS3(
+      Buffer.from("test"),
+      "test.png",
+      config.awsStableDiffusionBucketName
+    );
+
+    res.status(StatusCodes.OK).send(a);
+  });
+
+  app.post(
+    "/generate/stable-diffusion",
+    async (
+      req: Request<unknown, unknown, { prompt: string }, unknown>,
+      res
+    ) => {
+      const { prompt } = req.body;
+
+      try {
+        const { error, data } = await supabase
+          .from<Order>("Orders")
+          .insert([
+            {
+              prompt: prompt,
+              environment: process.env.NODE_ENV,
+              model: "stable-diffusion",
+            },
+          ])
+          .single();
+
+        if (error) {
+          return res
+            .status(StatusCodes.INTERNAL_SERVER_ERROR)
+            .send({ error: error.message });
+        }
+
+        const job = await stableDiffusionQueue.add(
+          "generate",
+          {
+            prompt,
+          },
+          { jobId: data.uuid }
+        );
+
+        return res.status(200).send({
+          status: "success",
+          message: "Generation started... GET $url to monitor progress",
+          id: data.uuid,
+          url:
+            getHost(req) +
+            "/generate/stable-diffusion/" +
+            data.uuid +
+            "/status",
+        });
+      } catch (e) {
+        console.log(e);
+        return res.status(500).send({ error: e.message });
+      }
+    }
+  );
+
+  app.get(
+    "/generate/stable-diffusion/:id/status",
+    async (req: Request<{ id: string }, unknown, unknown, unknown>, res) => {
+      const { id } = req.params;
+      try {
+        const { data: order, error } = await supabase
+          .from<Order>("Orders")
+          .select("*")
+          .match({ uuid: id })
+          .limit(1)
+          .single();
+
+        return res.status(200).send({
+          message: "Generating Images",
+          images: order?.results || [],
+        });
+      } catch (e) {
+        console.log(e);
+        return res.status(500).send({ error: e.message });
+      }
+    }
+  );
 
   app.get("/dalle2-test", async (req, res) => {
     if (process.env.NODE_ENV === "production") {

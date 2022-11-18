@@ -111,3 +111,4 @@ dist
 
 .metals/*
 .vscode/*
+.out/

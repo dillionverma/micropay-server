@@ -19,12 +19,15 @@ export enum ENV_KEYS {
   DALLE_API_KEY = "dalleApiKey",
   DALLE_SECRET_KEY = "dalleSecretKey",
   DALLE_QUEUE_NAME = "dalleQueueName",
+  STABLE_DIFFUSION_QUEUE_NAME = "stableDiffusionQueueName",
   DALLE_QUEUE_CONCURRENCY = "dalleQueueConcurrency",
+  STABLE_DIFFUSION_QUEUE_CONCURRENCY = "stableDiffusionQueueConcurrency",
   REDIS_CONNECTION_STRING = "redisConnectionString",
   REDIS_USERNAME = "redisUsername",
   REDIS_PASSWORD = "redisPassword",
   REDIS_HOST = "redisHost",
   REDIS_PORT = "redisPort",
+  STABILITY_API_KEY = "stabilityApiKey",
   SUPABASE_URL = "supabaseUrl",
   SUPABASE_API_KEY = "supabaseApiKey",
   TELEGRAM_PRIVATE_NOTIFIER_BOT_TOKEN = "telegramPrivateNotifierBotToken",
@@ -35,6 +38,8 @@ export enum ENV_KEYS {
   SENTRY_DSN = "sentryDsn",
   AWS_ACCESS_KEY = "awsAccessKey",
   AWS_SECRET_KEY = "awsSecretKey",
+  AWS_DALLE_BUCKET_NAME = "awsDalleBucketName",
+  AWS_STABLE_DIFFUSION_BUCKET_NAME = "awsStableDiffusionBucketName",
   MOCK_IMAGES = "mockImages",
   GITHUB_CI_TOKEN = "githubCIToken",
   CODECOV_TOKEN = "codecovToken",
@@ -55,7 +60,10 @@ export interface Config {
   [ENV_KEYS.DALLE_API_KEY]: string;
   [ENV_KEYS.DALLE_SECRET_KEY]: string;
   [ENV_KEYS.DALLE_QUEUE_NAME]: string;
+  [ENV_KEYS.STABLE_DIFFUSION_QUEUE_NAME]: string;
+  [ENV_KEYS.STABLE_DIFFUSION_QUEUE_CONCURRENCY]: string;
   [ENV_KEYS.DALLE_QUEUE_CONCURRENCY]: string;
+  [ENV_KEYS.STABILITY_API_KEY]: string;
   [ENV_KEYS.REDIS_CONNECTION_STRING]: string;
   [ENV_KEYS.REDIS_USERNAME]: string;
   [ENV_KEYS.REDIS_PASSWORD]: string;
@@ -71,6 +79,8 @@ export interface Config {
   [ENV_KEYS.SENTRY_DSN]: string;
   [ENV_KEYS.AWS_ACCESS_KEY]: string;
   [ENV_KEYS.AWS_SECRET_KEY]: string;
+  [ENV_KEYS.AWS_DALLE_BUCKET_NAME]: string;
+  [ENV_KEYS.AWS_STABLE_DIFFUSION_BUCKET_NAME]: string;
   [ENV_KEYS.MOCK_IMAGES]: string;
   [ENV_KEYS.GITHUB_CI_TOKEN]: string;
   [ENV_KEYS.CODECOV_TOKEN]: string;
@@ -94,6 +104,10 @@ export const config: Config = {
   [ENV_KEYS.DALLE_API_KEY]: process.env.DALLE_API_KEY,
   [ENV_KEYS.DALLE_SECRET_KEY]: process.env.DALLE_SECRET_KEY,
   [ENV_KEYS.DALLE_QUEUE_NAME]: process.env.DALLE_QUEUE_NAME,
+  [ENV_KEYS.STABLE_DIFFUSION_QUEUE_CONCURRENCY]:
+    process.env.STABLE_DIFFUSION_QUEUE_CONCURRENCY,
+  [ENV_KEYS.STABLE_DIFFUSION_QUEUE_NAME]:
+    process.env.STABLE_DIFFUSION_QUEUE_NAME,
   [ENV_KEYS.DALLE_QUEUE_CONCURRENCY]:
     process.env.DALLE_QUEUE_CONCURRENCY || "20",
   [ENV_KEYS.REDIS_CONNECTION_STRING]: process.env.REDIS_CONNECTION_STRING,
@@ -101,6 +115,7 @@ export const config: Config = {
   [ENV_KEYS.REDIS_PASSWORD]: process.env.REDIS_PASSWORD,
   [ENV_KEYS.REDIS_HOST]: process.env.REDIS_HOST,
   [ENV_KEYS.REDIS_PORT]: process.env.REDIS_PORT || "6379",
+  [ENV_KEYS.STABILITY_API_KEY]: process.env.STABILITY_API_KEY,
   [ENV_KEYS.SUPABASE_URL]: process.env.SUPABASE_URL,
   [ENV_KEYS.SUPABASE_API_KEY]: process.env.SUPABASE_API_KEY,
   [ENV_KEYS.TELEGRAM_PRIVATE_NOTIFIER_BOT_TOKEN]:
@@ -113,6 +128,9 @@ export const config: Config = {
   [ENV_KEYS.SENTRY_DSN]: process.env.SENTRY_DSN,
   [ENV_KEYS.AWS_ACCESS_KEY]: process.env.AWS_ACCESS_KEY,
   [ENV_KEYS.AWS_SECRET_KEY]: process.env.AWS_SECRET_KEY,
+  [ENV_KEYS.AWS_DALLE_BUCKET_NAME]: process.env.AWS_DALLE_BUCKET_NAME,
+  [ENV_KEYS.AWS_STABLE_DIFFUSION_BUCKET_NAME]:
+    process.env.AWS_STABLE_DIFFUSION_BUCKET_NAME,
   [ENV_KEYS.MOCK_IMAGES]: process.env.MOCK_IMAGES,
   [ENV_KEYS.GITHUB_CI_TOKEN]:
     process.env.NODE_ENV === "production" ? null : process.env.GITHUB_CI_TOKEN,
