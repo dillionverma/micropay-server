@@ -107,9 +107,7 @@ export const generationWorker = new Worker<GenerateJob>(
     try {
       await telegramBot.sendImagesToGroup(images, prompt);
       await telegramBot.sendMessageToAdmins(text);
-      setTimeout(async () => {
-        await twitter.tweetImages(images, prompt);
-      }, 2000);
+      await twitter.tweetImages(images, prompt);
     } catch (e) {
       console.error("Posting to telegram failed");
       console.error(e);

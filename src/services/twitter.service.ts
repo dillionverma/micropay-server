@@ -1,7 +1,6 @@
 import axios from "axios";
-import { TwitterApi } from "twitter-api-v2";
-import { sleep } from "../utils";
 import nlp from "compromise";
+import { TwitterApi } from "twitter-api-v2";
 
 export default class Twitter {
   private client: TwitterApi;
@@ -54,22 +53,24 @@ export default class Twitter {
     const nouns = this.tokenizePrompt(prompt);
     const promptHashtags = "#" + nouns.join(" #");
     prompt +=
-      " (Generated at https://micropay.ai) \n\n#micropayment #dalle2 #art #AI ";
+      "\n\nGenerated at https://micropay.ai \n\n#micropayment #dalle2 #art #AI ";
     prompt += promptHashtags;
     let mediaIds: string[] = [];
-    await images.map(async (image) => {
-      const response = await axios.get(image, {
-        responseType: "arraybuffer",
-      });
-      const buf = Buffer.from(response.data, "binary");
-      const id = await this.client.readWrite.v1.uploadMedia(buf, {
-        mimeType: "image/webp",
-      });
-      console.log(id);
-      mediaIds.push(id);
-    });
-    await sleep(5000);
-    // console.log("mediaIds", mediaIds);
+
+    await Promise.all(
+      images.map(async (image) => {
+        const response = await axios.get(image, {
+          responseType: "arraybuffer",
+        });
+        const buf = Buffer.from(response.data, "binary");
+        const id = await this.client.readWrite.v1.uploadMedia(buf, {
+          mimeType: "image/png",
+        });
+        console.log("Media ID: ", id);
+        mediaIds.push(id);
+      })
+    );
+
     try {
       const data = await this.client.readWrite.v1.tweet(prompt, {
         media_ids: mediaIds,

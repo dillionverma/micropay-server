@@ -117,7 +117,7 @@ export const init = (config: Config) => {
 
   app.use(cors());
   app.use(express.urlencoded({ extended: true })); // parse application/x-www-form-urlencoded
-  app.use(express.json()); // parse applicatios/json
+  app.use(express.json()); // parse application/json
 
   app.get("/", async (req, res) => {
     res.status(StatusCodes.OK).send("Hello World");
@@ -252,18 +252,6 @@ export const init = (config: Config) => {
       });
     }
   );
-
-  app.get("/tweet-test", async (req, res) => {
-    // const images = [
-    //   "https://cdn.openai.com/labs/images/3D%20render%20of%20a%20cute%20tropical%20fish%20in%20an%20aquarium%20on%20a%20dark%20blue%20background,%20digital%20art.webp?v=1",
-    //   "https://cdn.openai.com/labs/images/An%20armchair%20in%20the%20shape%20of%20an%20avocado.webp?v=1",
-    //   "https://cdn.openai.com/labs/images/An%20expressive%20oil%20painting%20of%20a%20basketball%20player%20dunking,%20depicted%20as%20an%20explosion%20of%20a%20nebula.webp?v=1",
-    //   "https://cdn.openai.com/labs/images/A%20photo%20of%20a%20white%20fur%20monster%20standing%20in%20a%20purple%20room.webp?v=1",
-    // ];
-    // const prompt =
-    //   "an astronaut playing basketball with cats in space, digital art";
-    // await twitter.tweetImages(images, prompt);
-  });
 
   app.post(
     "/feedback",
@@ -439,10 +427,6 @@ export const init = (config: Config) => {
             "https://cdn.openai.com/labs/images/An%20expressive%20oil%20painting%20of%20a%20basketball%20player%20dunking,%20depicted%20as%20an%20explosion%20of%20a%20nebula.webp?v=1",
             "https://cdn.openai.com/labs/images/A%20photo%20of%20a%20white%20fur%20monster%20standing%20in%20a%20purple%20room.webp?v=1",
           ];
-          // DELETE THIS SNIPPET ONCE REVIEWED LOCALLY!
-          setTimeout(async () => {
-            await twitter.tweetImages(images, order.prompt);
-          }, 2000);
 
           return res.status(StatusCodes.OK).send({
             status: ORDER_STATE.DALLE_GENERATED,
