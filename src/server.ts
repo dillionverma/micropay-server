@@ -278,10 +278,7 @@ export const init = (config: Config) => {
           .status(StatusCodes.INTERNAL_SERVER_ERROR)
           .send({ error: error.message });
       }
-      // if (
-      //   process.env.NODE_ENV === "production" ||
-      //   process.env.NODE_ENV === "development"
-      // ) {
+
       const feedbackText = `
       🗣 User Feedback Received: 
       Feedback: ${feedback}
@@ -293,7 +290,7 @@ export const init = (config: Config) => {
         await telegramBot.sendMessageToAdmins(feedbackText);
         console.log(feedbackText);
       }
-      // }
+
       return res.status(StatusCodes.OK).send({
         status: "success",
       });
