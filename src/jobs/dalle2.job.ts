@@ -97,7 +97,7 @@ export const generationWorker = new Worker<GenerateJob>(
 
       // Send telegram message
       const text = `
-      Received new order!
+      💰 RECEIVED NEW ORDER!
       Prompt: "${prompt}"
       Invoice ID: ${invoice?.id}
       Satoshis: ${invoice?.tokens}

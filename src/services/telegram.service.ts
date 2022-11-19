@@ -22,7 +22,7 @@ export class TelegramBot {
     // Don't send to admins if in CI
     if (process.env.CI) return;
 
-    if (process.env.NODE_ENV !== "production") return;
+    // if (process.env.NODE_ENV !== "production") return;
 
     for (const adminId of this.adminIds) {
       await this.privateNotifierBot.sendMessage(adminId, message);
