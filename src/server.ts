@@ -286,7 +286,7 @@ export const init = (config: Config) => {
       Email: ${email}
       `;
 
-      if (process.env.NODE_ENV === "production") {
+      if (process.env.NODE_ENV === "production" && feedback && email) {
         await telegramBot.sendMessageToAdmins(feedbackText);
         console.log(feedbackText);
       }
