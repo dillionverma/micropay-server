@@ -349,7 +349,8 @@ export const init = (config: Config) => {
    */
   app.get("/generate/:id/status", async (req, res) => {
     const { id } = req.params;
-    const { webln } = req.query;
+    const webln = req.query.webln == "true";
+
     try {
       // get invoice from lnd
       const invoice = await lightning.getInvoice(id);
