@@ -281,6 +281,7 @@ export const init = (config: Config) => {
 
       const feedbackText = `
       🗣 User Feedback Received: 
+      Unique ID: ${invoiceId.slice(0, 10)}
       Feedback: ${feedback}
       Rating: ${rating}
       Email: ${email}
