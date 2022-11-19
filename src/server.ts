@@ -167,14 +167,15 @@ export const init = (config: Config) => {
         }
 
         const text = `
-        New Order request
+        🧾 New Order request
         ENV: ${process.env.NODE_ENV}
         Invoice Request: ${invoice.request}
         Invoice Tokens: ${invoice.tokens}
         Prompt: ${prompt}
         `;
-
-        await telegramBot.sendMessageToAdmins(text);
+        if (process.env.NODE_ENV === "production") {
+          await telegramBot.sendMessageToAdmins(text);
+        }
         console.log("Invoice generated: ", invoice);
         return res.status(StatusCodes.OK).send(invoice);
       } catch (e) {
@@ -276,6 +277,19 @@ export const init = (config: Config) => {
         return res
           .status(StatusCodes.INTERNAL_SERVER_ERROR)
           .send({ error: error.message });
+      }
+
+      const feedbackText = `
+      🗣 User Feedback Received: 
+      Unique ID: ${invoiceId.slice(0, 10)}
+      Feedback: ${feedback}
+      Rating: ${rating}
+      Email: ${email}
+      `;
+
+      if (process.env.NODE_ENV === "production") {
+        await telegramBot.sendMessageToAdmins(feedbackText);
+        console.log(feedbackText);
       }
 
       return res.status(StatusCodes.OK).send({
