@@ -265,6 +265,7 @@ export const init = (config: Config) => {
 
         res.cookie("counter", parseInt(req.cookies.counter) + 1, {
           maxAge: 315360000000,
+          sameSite: "none",
         });
 
         return res.status(200).send({
