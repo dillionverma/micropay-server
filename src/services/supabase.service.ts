@@ -19,4 +19,11 @@ export type Order = {
   model: string;
 };
 
+export type SessionRow = {
+  id: string;
+  created_at: Date;
+  ip: string;
+  session_id: string;
+};
+
 export const supabase = createClient(config.supabaseUrl, config.supabaseApiKey);

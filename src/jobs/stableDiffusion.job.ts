@@ -42,5 +42,8 @@ export const stableDiffusionWorker = new Worker<GenerateJob>(
     } catch (e) {
       console.log(e);
     }
+  },
+  {
+    connection,
   }
 );

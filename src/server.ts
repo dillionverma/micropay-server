@@ -1,6 +1,9 @@
 import { Job } from "bullmq";
+import cookieParser from "cookie-parser";
 import cors from "cors";
+import crypto from "crypto";
 import express, { Request } from "express";
+import rateLimit from "express-rate-limit";
 import { StatusCodes } from "http-status-codes";
 import { Config, config } from "./config";
 import { generationQueue } from "./jobs/dalle2.job";
@@ -29,6 +32,17 @@ export const twitter = new Twitter(
 );
 
 export const BUCKET_NAME = "dalle2-lightning";
+// create a sha256 hash function
+const sha256 = (data: string) => {
+  return crypto.createHash("sha256").update(data).digest("hex");
+};
+
+const apiLimiter = rateLimit({
+  windowMs: 12 * 60 * 60 * 1000, // 12 hour window
+  max: 9, // Limit each IP to 9 requests per `window`
+  standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
+  legacyHeaders: false, // Disable the `X-RateLimit-*` headers
+});
 
 export const aws = new AWS(config.awsAccessKey, config.awsSecretKey);
 export const dalle2 = new Dalle2(config.dalleApiKey, config.dalleSecretKey);
@@ -115,7 +129,10 @@ export const init = (config: Config) => {
   // TracingHandler creates a trace for every incoming request
   app.use(Sentry.Handlers.tracingHandler());
 
-  app.use(cors());
+  app.use(cors({ credentials: true, origin: true }));
+  app.set("trust proxy", true);
+  app.use(cookieParser());
+
   app.use(express.urlencoded({ extended: true })); // parse application/x-www-form-urlencoded
   app.use(express.json()); // parse application/json
 
@@ -194,23 +211,17 @@ export const init = (config: Config) => {
     res.status(StatusCodes.OK).send(flagged);
   });
 
-  app.get("/test", async (req, res) => {
-    console.log(config);
-    const a = await aws.uploadImageBufferToS3(
-      Buffer.from("test"),
-      "test.png",
-      config.awsStableDiffusionBucketName
-    );
-
-    res.status(StatusCodes.OK).send(a);
-  });
-
   app.post(
     "/generate/stable-diffusion",
+    apiLimiter,
     async (
       req: Request<unknown, unknown, { prompt: string }, unknown>,
       res
     ) => {
+      if (!req.cookies.counter) {
+        req.cookies.counter = 3;
+      }
+
       const { prompt } = req.body;
 
       try {
@@ -231,6 +242,12 @@ export const init = (config: Config) => {
             .send({ error: error.message });
         }
 
+        // read counter variable from cookie
+        if (req.cookies.counter <= 0)
+          return res.status(StatusCodes.FORBIDDEN).send({
+            error: "You have reached your limit of 3 requests",
+          });
+
         const job = await stableDiffusionQueue.add(
           "generate",
           {
@@ -238,6 +255,10 @@ export const init = (config: Config) => {
           },
           { jobId: data.uuid }
         );
+
+        res.cookie("counter", parseInt(req.cookies.counter) - 1, {
+          maxAge: 315360000000,
+        });
 
         return res.status(200).send({
           status: "success",
