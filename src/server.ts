@@ -219,7 +219,7 @@ export const init = (config: Config) => {
       res
     ) => {
       if (!req.cookies.counter) {
-        req.cookies.counter = 3;
+        req.cookies.counter = 0;
       }
 
       const { prompt } = req.body;
@@ -243,7 +243,7 @@ export const init = (config: Config) => {
         }
 
         // read counter variable from cookie
-        if (req.cookies.counter <= 0)
+        if (req.cookies.counter >= 3)
           return res.status(StatusCodes.FORBIDDEN).send({
             error: "You have reached your limit of 3 requests",
           });
@@ -256,7 +256,7 @@ export const init = (config: Config) => {
           { jobId: data.uuid }
         );
 
-        res.cookie("counter", parseInt(req.cookies.counter) - 1, {
+        res.cookie("counter", parseInt(req.cookies.counter) + 1, {
           maxAge: 315360000000,
         });
 
