@@ -1,17 +1,22 @@
 import { Job } from "bullmq";
+import cookieParser from "cookie-parser";
 import cors from "cors";
+import crypto from "crypto";
 import express, { Request } from "express";
+import rateLimit from "express-rate-limit";
 import { StatusCodes } from "http-status-codes";
 import { Config, config } from "./config";
 import { generationQueue } from "./jobs/dalle2.job";
+import { stableDiffusionQueue } from "./jobs/stableDiffusion.job";
 import AWS from "./services/aws.services";
 import Dalle2 from "./services/dalle2.service";
 import Lightning from "./services/lightning.service";
 import Sentry from "./services/sentry.service";
+import Stability from "./services/stableDiffusion.service";
 import { Order, supabase } from "./services/supabase.service";
 import { TelegramBot } from "./services/telegram.service";
 import Twitter from "./services/twitter.service";
-import { sleep } from "./utils";
+import { getHost, sleep } from "./utils";
 
 export const lightning = new Lightning(
   config.lndMacaroonInvoice,
@@ -27,12 +32,21 @@ export const twitter = new Twitter(
 );
 
 export const BUCKET_NAME = "dalle2-lightning";
-export const aws = new AWS(
-  config.awsAccessKey,
-  config.awsSecretKey,
-  BUCKET_NAME
-);
+// create a sha256 hash function
+const sha256 = (data: string) => {
+  return crypto.createHash("sha256").update(data).digest("hex");
+};
+
+const apiLimiter = rateLimit({
+  windowMs: 12 * 60 * 60 * 1000, // 12 hour window
+  max: 9, // Limit each IP to 9 requests per `window`
+  standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
+  legacyHeaders: false, // Disable the `X-RateLimit-*` headers
+});
+
+export const aws = new AWS(config.awsAccessKey, config.awsSecretKey);
 export const dalle2 = new Dalle2(config.dalleApiKey, config.dalleSecretKey);
+export const stability = new Stability(config.stabilityApiKey);
 
 export const telegramBot = new TelegramBot(
   config.telegramPrivateNotifierBotToken,
@@ -115,7 +129,10 @@ export const init = (config: Config) => {
   // TracingHandler creates a trace for every incoming request
   app.use(Sentry.Handlers.tracingHandler());
 
-  app.use(cors());
+  app.use(cors({ credentials: true, origin: true }));
+  app.set("trust proxy", true);
+  app.use(cookieParser());
+
   app.use(express.urlencoded({ extended: true })); // parse application/x-www-form-urlencoded
   app.use(express.json()); // parse application/json
 
@@ -150,15 +167,19 @@ export const init = (config: Config) => {
           DEFAULT_PRICE
         );
 
-        const { error } = await supabase.from("Orders").insert([
-          {
-            invoice_id: invoice.id,
-            invoice_request: invoice.request,
-            satoshis: invoice.tokens,
-            prompt: prompt,
-            environment: process.env.NODE_ENV,
-          },
-        ]);
+        const { data, error } = await supabase
+          .from<Order>("Orders")
+          .insert([
+            {
+              invoice_id: invoice.id,
+              invoice_request: invoice.request,
+              satoshis: invoice.tokens,
+              prompt: prompt,
+              environment: process.env.NODE_ENV,
+              model: "dalle",
+            },
+          ])
+          .single();
 
         if (error) {
           return res
@@ -177,7 +198,11 @@ export const init = (config: Config) => {
           await telegramBot.sendMessageToAdmins(text);
         }
         console.log("Invoice generated: ", invoice);
-        return res.status(StatusCodes.OK).send(invoice);
+        return res.status(StatusCodes.OK).send({
+          id: invoice.id,
+          uuid: data.uuid,
+          request: invoice.request,
+        });
       } catch (e) {
         console.log(e);
         res
@@ -192,6 +217,95 @@ export const init = (config: Config) => {
     const flagged = await dalle2.checkPrompt(prompt);
     res.status(StatusCodes.OK).send(flagged);
   });
+
+  app.post(
+    "/generate/stable-diffusion",
+    apiLimiter,
+    async (
+      req: Request<unknown, unknown, { prompt: string }, unknown>,
+      res
+    ) => {
+      if (!req.cookies.counter) {
+        req.cookies.counter = 0;
+      }
+
+      const { prompt } = req.body;
+
+      try {
+        const { error, data } = await supabase
+          .from<Order>("Orders")
+          .insert([
+            {
+              prompt: prompt,
+              environment: process.env.NODE_ENV,
+              model: "stable-diffusion",
+            },
+          ])
+          .single();
+
+        if (error) {
+          return res
+            .status(StatusCodes.INTERNAL_SERVER_ERROR)
+            .send({ error: error.message });
+        }
+
+        // read counter variable from cookie
+        if (req.cookies.counter >= 3)
+          return res.status(StatusCodes.FORBIDDEN).send({
+            error: "You have reached your limit of 3 requests",
+          });
+
+        const job = await stableDiffusionQueue.add(
+          "generate",
+          {
+            prompt,
+          },
+          { jobId: data.uuid }
+        );
+
+        res.cookie("counter", parseInt(req.cookies.counter) + 1, {
+          maxAge: 315360000000,
+        });
+
+        return res.status(200).send({
+          status: "success",
+          message: "Generation started... GET $url to monitor progress",
+          id: data.uuid,
+          url:
+            getHost(req) +
+            "/generate/stable-diffusion/" +
+            data.uuid +
+            "/status",
+        });
+      } catch (e) {
+        console.log(e);
+        return res.status(500).send({ error: e.message });
+      }
+    }
+  );
+
+  app.get(
+    "/generate/stable-diffusion/:id/status",
+    async (req: Request<{ id: string }, unknown, unknown, unknown>, res) => {
+      const { id } = req.params;
+      try {
+        const { data: order, error } = await supabase
+          .from<Order>("Orders")
+          .select("*")
+          .match({ uuid: id })
+          .limit(1)
+          .single();
+
+        return res.status(200).send({
+          message: "Generating Images",
+          images: order?.results || [],
+        });
+      } catch (e) {
+        console.log(e);
+        return res.status(500).send({ error: e.message });
+      }
+    }
+  );
 
   app.get("/dalle2-test", async (req, res) => {
     if (process.env.NODE_ENV === "production") {
@@ -260,17 +374,17 @@ export const init = (config: Config) => {
       req: Request<
         unknown,
         unknown,
-        { invoiceId: string; rating: number; feedback: string; email: string },
+        { uuid: string; rating: number; feedback: string; email: string },
         unknown
       >,
       res
     ) => {
-      const { invoiceId, rating, feedback, email } = req.body;
+      const { uuid, rating, feedback, email } = req.body;
       // Update order to indicate that images have been generated
       const { data: updatedOrder, error } = await supabase
         .from<Order>("Orders")
         .update({ rating, feedback, email })
-        .match({ invoice_id: invoiceId })
+        .match({ uuid })
         .single();
 
       if (error) {
@@ -281,7 +395,7 @@ export const init = (config: Config) => {
 
       const feedbackText = `
       🗣 User Feedback Received: 
-      Unique ID: ${invoiceId.slice(0, 10)}
+      Unique ID: ${uuid.slice(0, 10)}
       Feedback: ${feedback}
       Rating: ${rating}
       Email: ${email}

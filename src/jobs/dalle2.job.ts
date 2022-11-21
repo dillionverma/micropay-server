@@ -74,7 +74,8 @@ export const generationWorker = new Worker<GenerateJob>(
       dalleImages.map((image: GenerateResponse) =>
         aws.uploadImageBufferToS3(
           image.imageBuffer,
-          `${image.generationId}.png`
+          `${image.generationId}.png`,
+          config.awsDalleBucketName
         )
       )
     );
