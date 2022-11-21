@@ -22,7 +22,7 @@ export default class Stability {
     this.apiKey = apiKey;
   }
 
-  async generate(prompt: string) {
+  async generate(prompt: string): Promise<string[]> {
     // Random default parameters - can be changed
     const { res, images } = await generateAsync({
       prompt,
