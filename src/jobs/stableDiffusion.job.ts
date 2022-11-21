@@ -42,7 +42,7 @@ export const stableDiffusionWorker = new Worker<GenerateJob>(
 
         // Send telegram message
         const text = `
-        Received new free generation!
+        🖌️ Received new free generation:
         Prompt: "${prompt}"
         `;
 

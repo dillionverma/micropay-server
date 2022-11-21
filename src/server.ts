@@ -167,16 +167,19 @@ export const init = (config: Config) => {
           DEFAULT_PRICE
         );
 
-        const { error } = await supabase.from("Orders").insert([
-          {
-            invoice_id: invoice.id,
-            invoice_request: invoice.request,
-            satoshis: invoice.tokens,
-            prompt: prompt,
-            environment: process.env.NODE_ENV,
-            model: "dalle",
-          },
-        ]);
+        const { data, error } = await supabase
+          .from<Order>("Orders")
+          .insert([
+            {
+              invoice_id: invoice.id,
+              invoice_request: invoice.request,
+              satoshis: invoice.tokens,
+              prompt: prompt,
+              environment: process.env.NODE_ENV,
+              model: "dalle",
+            },
+          ])
+          .single();
 
         if (error) {
           return res
@@ -195,7 +198,11 @@ export const init = (config: Config) => {
           await telegramBot.sendMessageToAdmins(text);
         }
         console.log("Invoice generated: ", invoice);
-        return res.status(StatusCodes.OK).send(invoice);
+        return res.status(StatusCodes.OK).send({
+          id: invoice.id,
+          uuid: data.uuid,
+          request: invoice.request,
+        });
       } catch (e) {
         console.log(e);
         res
@@ -367,17 +374,17 @@ export const init = (config: Config) => {
       req: Request<
         unknown,
         unknown,
-        { invoiceId: string; rating: number; feedback: string; email: string },
+        { uuid: string; rating: number; feedback: string; email: string },
         unknown
       >,
       res
     ) => {
-      const { invoiceId, rating, feedback, email } = req.body;
+      const { uuid, rating, feedback, email } = req.body;
       // Update order to indicate that images have been generated
       const { data: updatedOrder, error } = await supabase
         .from<Order>("Orders")
         .update({ rating, feedback, email })
-        .match({ invoice_id: invoiceId })
+        .match({ uuid })
         .single();
 
       if (error) {
@@ -388,13 +395,13 @@ export const init = (config: Config) => {
 
       const feedbackText = `
       🗣 User Feedback Received: 
-      Unique ID: ${invoiceId.slice(0, 10)}
+      Unique ID: ${uuid.slice(0, 10)}
       Feedback: ${feedback}
       Rating: ${rating}
       Email: ${email}
       `;
 
-      if (process.env.NODE_ENV === "production") {
+      if (process.env.NODE_ENV !== "production") {
         await telegramBot.sendMessageToAdmins(feedbackText);
         console.log(feedbackText);
       }
