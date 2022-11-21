@@ -46,7 +46,6 @@ export const stableDiffusionWorker = new Worker<GenerateJob>(
         Prompt: "${prompt}"
         `;
 
-        console.log("TEXT", text);
         try {
           await telegramBot.sendImagesToGroup(urls, prompt);
           await telegramBot.sendMessageToAdmins(text);
