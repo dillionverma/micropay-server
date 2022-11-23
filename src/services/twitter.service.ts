@@ -51,7 +51,7 @@ export default class Twitter {
 
   async tweetImages(images: string[], prompt: string): Promise<void> {
     const nouns = this.tokenizePrompt(prompt);
-    const promptHashtags = "#" + nouns.join(" #");
+    const promptHashtags = nouns.length === 0 ? "" : "#" + nouns.join(" #");
     prompt +=
       "\n\nGenerated at https://micropay.ai with #Bitcoin \n\n#micropayment #dalle2 #art #AI ";
     prompt += promptHashtags;

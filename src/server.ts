@@ -140,6 +140,17 @@ export const init = (config: Config) => {
     res.status(StatusCodes.OK).send("Hello World");
   });
 
+  // app.get("/tweet", async (req, res) => {
+  //   const images = [
+  //     "https://cdn.openai.com/labs/images/3D%20render%20of%20a%20cute%20tropical%20fish%20in%20an%20aquarium%20on%20a%20dark%20blue%20background,%20digital%20art.webp?v=1",
+  //     "https://cdn.openai.com/labs/images/An%20armchair%20in%20the%20shape%20of%20an%20avocado.webp?v=1",
+  //     "https://cdn.openai.com/labs/images/An%20expressive%20oil%20painting%20of%20a%20basketball%20player%20dunking,%20depicted%20as%20an%20explosion%20of%20a%20nebula.webp?v=1",
+  //     "https://cdn.openai.com/labs/images/A%20photo%20of%20a%20white%20fur%20monster%20standing%20in%20a%20purple%20room.webp?v=1",
+  //   ];
+  //   await twitter.tweetImages(images, "This is a prompt");
+  //   res.status(StatusCodes.OK).send("Tweeted");
+  // });
+
   app.post(
     "/invoice",
     async (
