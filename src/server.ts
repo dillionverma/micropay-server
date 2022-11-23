@@ -5,6 +5,7 @@ import crypto from "crypto";
 import express, { Request } from "express";
 import rateLimit from "express-rate-limit";
 import { StatusCodes } from "http-status-codes";
+import RedisStore from "rate-limit-redis";
 import { Config, config } from "./config";
 import { generationQueue } from "./jobs/dalle2.job";
 import { stableDiffusionQueue } from "./jobs/stableDiffusion.job";
@@ -15,6 +16,8 @@ import Sentry from "./services/sentry.service";
 import Stability from "./services/stableDiffusion.service";
 import { Order, supabase } from "./services/supabase.service";
 import { TelegramBot } from "./services/telegram.service";
+
+import { connection } from "./services/redis.service";
 import Twitter from "./services/twitter.service";
 import { getHost, sleep } from "./utils";
 
@@ -42,6 +45,10 @@ const apiLimiter = rateLimit({
   max: 9, // Limit each IP to 9 requests per `window`
   standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
   legacyHeaders: false, // Disable the `X-RateLimit-*` headers
+  // Redis store configuration
+  store: new RedisStore({
+    sendCommand: (...args: string[]) => connection.call(...args),
+  }),
 });
 
 export const aws = new AWS(config.awsAccessKey, config.awsSecretKey);
