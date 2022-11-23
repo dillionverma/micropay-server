@@ -278,6 +278,8 @@ export const init = (config: Config) => {
           maxAge: 315360000000,
           sameSite: "none",
           secure: true,
+          domain:
+            process.env.NODE_ENV === "production" ? "micropay.ai" : "localhost",
         });
 
         return res.status(200).send({
