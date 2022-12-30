@@ -9,7 +9,7 @@ import RedisStore from "rate-limit-redis";
 import { Config, config } from "./config";
 import { generationQueue } from "./jobs/dalle2.job";
 import { stableDiffusionQueue } from "./jobs/stableDiffusion.job";
-import AWS from "./services/aws.services";
+import AWS from "./services/aws.service";
 import Dalle2 from "./services/dalle2.service";
 import Lightning from "./services/lightning.service";
 import Sentry from "./services/sentry.service";
@@ -17,6 +17,7 @@ import Stability from "./services/stableDiffusion.service";
 import { Order, supabase } from "./services/supabase.service";
 import { TelegramBot } from "./services/telegram.service";
 
+import OpenAI from "./services/openai.service";
 import { connection } from "./services/redis.service";
 import Twitter from "./services/twitter.service";
 import { getHost, sleep } from "./utils";
@@ -34,11 +35,15 @@ export const twitter = new Twitter(
   config.twitterAccessSecret
 );
 
+export const openai = new OpenAI(config.openaiApiKey);
+
 export const BUCKET_NAME = "dalle2-lightning";
 // create a sha256 hash function
-const sha256 = (data: string) => {
+const sha256 = (data: string | Buffer) => {
   return crypto.createHash("sha256").update(data).digest("hex");
 };
+
+const randomBytes = () => crypto.randomBytes(32);
 
 const apiLimiter = rateLimit({
   windowMs: 12 * 60 * 60 * 1000, // 12 hour window
@@ -86,11 +91,13 @@ export const MESSAGE: { [key in ORDER_STATE]: string } = {
   INVOICE_NOT_PAID: "Order received! Waiting for payment...",
   WEBLN_WALLET_DETECTED: "WebLN wallet detected! Waiting for confirmation",
 
-  DALLE_GENERATING: "Invoice paid! Dalle-2 is currently generating images...",
+  DALLE_GENERATING:
+    "Payment received! Dalle-2 is currently generating images...",
   DALLE_UPLOADING: "Images generated! Uploading images to cloud...",
-  DALLE_SAVING: "last change",
+  DALLE_SAVING: "Saving images.",
   DALLE_GENERATED: "Dalle-2 has generated images.",
-  DALLE_FAILED: "Dalle-2 failed to generate images.",
+  DALLE_FAILED:
+    "Dalle-2 failed to generate images. Your payment has been refunded.",
 
   INVOICE_CANCELLED: "Invoice was cancelled",
   USER_ERROR: "An error occured",
@@ -107,10 +114,10 @@ export const ORDER_PROGRESS: { [key in ORDER_STATE]?: number } = {
   DALLE_UPLOADING: 80,
   DALLE_SAVING: 90,
 
-  DALLE_FAILED: -1,
-  INVOICE_CANCELLED: -1,
-  USER_ERROR: -1,
-  SERVER_ERROR: -1,
+  DALLE_FAILED: 0,
+  INVOICE_CANCELLED: 0,
+  USER_ERROR: 0,
+  SERVER_ERROR: 0,
 };
 
 const sendMockImages = async (res, prompt) => {
@@ -180,9 +187,17 @@ export const init = (config: Config) => {
 
       try {
         // https://bitcoin.stackexchange.com/questions/85951/whats-the-maximum-size-of-the-memo-in-a-ln-payment-request
-        const invoice = await lightning.createInvoice(
+
+        const preimage = randomBytes();
+        const id = sha256(preimage);
+        const expiresAt = new Date();
+        expiresAt.setSeconds(expiresAt.getSeconds() + 600); // 10 minutes to pay invoice
+
+        const invoice = await lightning.createHodlInvoice(
+          id,
           `Dalle-2 generate: "${prompt.substring(0, 300)}"`,
-          DEFAULT_PRICE
+          DEFAULT_PRICE,
+          expiresAt
         );
 
         const { data, error } = await supabase
@@ -190,6 +205,7 @@ export const init = (config: Config) => {
           .insert([
             {
               invoice_id: invoice.id,
+              invoice_preimage: preimage.toString("hex"),
               invoice_request: invoice.request,
               satoshis: invoice.tokens,
               prompt: prompt,
@@ -514,32 +530,47 @@ export const init = (config: Config) => {
           message: MESSAGE.INVOICE_NOT_FOUND,
         });
 
-      if (webln && !invoice.is_confirmed) {
+      if (invoice.is_canceled) {
         console.log({
-          status: ORDER_STATE.WEBLN_WALLET_DETECTED,
-          message: MESSAGE.WEBLN_WALLET_DETECTED,
-          progress: ORDER_PROGRESS.WEBLN_WALLET_DETECTED,
+          status: ORDER_STATE.DALLE_FAILED,
+          message: MESSAGE.DALLE_FAILED,
+          progress: ORDER_PROGRESS.DALLE_FAILED,
           invoice: invoice.request,
         });
         return res.status(StatusCodes.OK).send({
-          status: ORDER_STATE.WEBLN_WALLET_DETECTED,
-          message: MESSAGE.WEBLN_WALLET_DETECTED,
-          progress: ORDER_PROGRESS.WEBLN_WALLET_DETECTED,
+          status: ORDER_STATE.DALLE_FAILED,
+          message: MESSAGE.DALLE_FAILED,
+          progress: ORDER_PROGRESS.DALLE_FAILED,
         });
       }
+
       // Check if invoice is paid
-      if (!invoice.is_confirmed) {
-        console.log({
-          status: ORDER_STATE.INVOICE_NOT_PAID,
-          message: MESSAGE.INVOICE_NOT_PAID,
-          progress: ORDER_PROGRESS.INVOICE_NOT_PAID,
-          invoice: invoice.request,
-        });
-        return res.status(StatusCodes.OK).send({
-          status: ORDER_STATE.INVOICE_NOT_PAID,
-          message: MESSAGE.INVOICE_NOT_PAID,
-          progress: ORDER_PROGRESS.INVOICE_NOT_PAID,
-        });
+      if (!invoice.is_held && !invoice.is_confirmed) {
+        if (webln) {
+          console.log({
+            status: ORDER_STATE.WEBLN_WALLET_DETECTED,
+            message: MESSAGE.WEBLN_WALLET_DETECTED,
+            progress: ORDER_PROGRESS.WEBLN_WALLET_DETECTED,
+            invoice: invoice.request,
+          });
+          return res.status(StatusCodes.OK).send({
+            status: ORDER_STATE.WEBLN_WALLET_DETECTED,
+            message: MESSAGE.WEBLN_WALLET_DETECTED,
+            progress: ORDER_PROGRESS.WEBLN_WALLET_DETECTED,
+          });
+        } else {
+          console.log({
+            status: ORDER_STATE.INVOICE_NOT_PAID,
+            message: MESSAGE.INVOICE_NOT_PAID,
+            progress: ORDER_PROGRESS.INVOICE_NOT_PAID,
+            invoice: invoice.request,
+          });
+          return res.status(StatusCodes.OK).send({
+            status: ORDER_STATE.INVOICE_NOT_PAID,
+            message: MESSAGE.INVOICE_NOT_PAID,
+            progress: ORDER_PROGRESS.INVOICE_NOT_PAID,
+          });
+        }
       }
 
       // 1. Check if image has already been generated
@@ -572,7 +603,7 @@ export const init = (config: Config) => {
       job = await generationQueue.getJob(id);
 
       // 3. If image has not been generated, check if invoice has been paid
-      if (invoice.is_confirmed) {
+      if (invoice.is_held) {
         if (process.env.MOCK_IMAGES === "true") {
           const images = [
             "https://cdn.openai.com/labs/images/3D%20render%20of%20a%20cute%20tropical%20fish%20in%20an%20aquarium%20on%20a%20dark%20blue%20background,%20digital%20art.webp?v=1",
@@ -593,28 +624,27 @@ export const init = (config: Config) => {
         job = await generationQueue.getJob(id);
 
         // 3. If image has not been generated, check if invoice has been paid
-        if (invoice.is_confirmed) {
-          if (process.env.MOCK_IMAGES === "true") {
-            await sleep(2000);
-            return sendMockImages(res, order.prompt);
-          }
-
-          if (!job) {
-            // 5. If job is not in queue, add it to the queue
-            job = await generationQueue.add(
-              "generate",
-              {
-                prompt: order.prompt,
-              },
-              { jobId: id }
-            );
-          }
-          await job.updateProgress(ORDER_PROGRESS.DALLE_GENERATING);
-          await job.update({
-            ...job.data,
-            message: MESSAGE.DALLE_GENERATING,
-          });
+        if (process.env.MOCK_IMAGES === "true") {
+          await sleep(2000);
+          return sendMockImages(res, order.prompt);
         }
+
+        if (!job) {
+          // 5. If job is not in queue, add it to the queue
+          job = await generationQueue.add(
+            "generate",
+            {
+              prompt: order.prompt,
+            },
+            { jobId: id }
+          );
+        }
+        await job.updateProgress(ORDER_PROGRESS.DALLE_GENERATING);
+        await job.update({
+          ...job.data,
+          message: MESSAGE.DALLE_GENERATING,
+          status: ORDER_STATE.DALLE_GENERATING,
+        });
 
         // 6. If job is in queue, but not done, send progress
         return res.status(StatusCodes.OK).send({

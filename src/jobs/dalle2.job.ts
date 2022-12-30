@@ -1,23 +1,24 @@
+import axios from "axios";
 import { Job, Queue, Worker } from "bullmq";
 import { GetInvoiceResult } from "lightning";
+import { v4 as uuidv4 } from "uuid";
 
 import { config } from "../config";
 import {
   aws,
-  dalle2,
   lightning,
   MESSAGE,
+  openai,
   ORDER_PROGRESS,
   ORDER_STATE,
   telegramBot,
   twitter,
 } from "../server";
-import { GenerateResponse } from "../services/dalle2.service";
 import { connection } from "../services/redis.service";
 import { Order, supabase } from "../services/supabase.service";
 
 // Core assumptions of this code is that
-// job.id === invoice.id
+// job.id === invoice.uuid
 
 export interface GenerateJob {
   prompt: string;
@@ -46,8 +47,7 @@ export const generationWorker = new Worker<GenerateJob>(
   async (job: Job) => {
     console.log("Starting job", job.id);
     const { prompt } = job.data;
-    // invoice id
-    const { id } = job;
+    const { id } = job; // uuid
 
     await updateJobStatus(job, ORDER_STATE.INVOICE_NOT_PAID);
 
@@ -61,24 +61,51 @@ export const generationWorker = new Worker<GenerateJob>(
       if (!invoice) throw "Invoice not found";
 
       // Check if invoice is paid (sanity check)
-      if (!invoice.is_confirmed) throw "Invoice not paid";
+      if (!invoice.is_held) throw "Invoice not paid";
     }
 
-    // Generate images
-    await updateJobStatus(job, ORDER_STATE.DALLE_GENERATING);
-    const dalleImages = await dalle2.generate(prompt);
-    await updateJobStatus(job, ORDER_STATE.DALLE_UPLOADING);
+    // Job failing test to see if payment is refunded
+    // job.discard();
+    // await lightning.cancelHodlInvoice(invoice.id);
+    // await updateJobStatus(job, ORDER_STATE.DALLE_FAILED);
+    // throw "failed";
 
-    // Upload images to S3
-    const images: string[] = await Promise.all(
-      dalleImages.map((image: GenerateResponse) =>
-        aws.uploadImageBufferToS3(
-          image.imageBuffer,
-          `${image.generationId}.png`,
-          config.awsDalleBucketName
+    let images: string[];
+
+    try {
+      // Generate images
+      await updateJobStatus(job, ORDER_STATE.DALLE_GENERATING);
+      const dalleImages = await openai.createImage(prompt, 4);
+      await updateJobStatus(job, ORDER_STATE.DALLE_UPLOADING);
+
+      // Get image buffers
+      const imageBuffers = await Promise.all(
+        dalleImages.map(async (url) => {
+          const response = await axios(url, {
+            method: "GET",
+            responseType: "arraybuffer",
+          });
+          return response.data;
+        })
+      );
+
+      // Upload buffers to AWS
+      images = await Promise.all(
+        imageBuffers.map((buffer) =>
+          aws.uploadImageBufferToS3(
+            buffer,
+            `${uuidv4()}.png`,
+            config.awsDalleBucketName
+          )
         )
-      )
-    );
+      );
+    } catch {
+      console.error("Image generation failed");
+    }
+
+    if (images.length === 0) {
+      await lightning.cancelHodlInvoice(invoice.id);
+    }
 
     console.log(images);
     await updateJobStatus(job, ORDER_STATE.DALLE_SAVING);
@@ -94,6 +121,12 @@ export const generationWorker = new Worker<GenerateJob>(
       if (error) {
         console.error(error);
         throw error;
+      }
+
+      // Only actively held invoices can be settled
+      if (invoice.is_held) {
+        // Use the secret to claim the funds
+        await lightning.settleHodlInvoice(updatedOrder.invoice_preimage);
       }
 
       // Send telegram message

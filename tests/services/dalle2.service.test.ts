@@ -5,6 +5,7 @@ import fs from "fs";
 import { createRequire } from "module";
 import { config } from "../../src/config";
 import Dalle2, { Task } from "../../src/services/dalle2.service";
+
 import { getNRandomElements, getRandomElement, sleep } from "../../src/utils";
 const require = createRequire(import.meta.url);
 
@@ -43,7 +44,7 @@ describe("Dalle-2 API", () => {
   let task: Task;
 
   before(() => {
-    dalle2 = new Dalle2(config.dalleApiKey);
+    dalle2 = new Dalle2(config.dalleApiKey, config.dalleSecretKey);
     task = require("../fixtures/task.json");
   });
 
@@ -54,7 +55,7 @@ describe("Dalle-2 API", () => {
     });
 
     it("should return false if token is invalid", async () => {
-      const dalle2Invalid = new Dalle2("blah blah blah");
+      const dalle2Invalid = new Dalle2("blah blah blah", "asaa");
       const valid = await dalle2Invalid.isTokenValid();
       expect(valid).to.be.false;
     });

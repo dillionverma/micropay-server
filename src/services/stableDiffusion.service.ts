@@ -31,7 +31,7 @@ export default class Stability {
       cfgScale: 15,
       diffusion: "k_euler_ancestral",
       samples: 1,
-      seed: 3465383516,
+      seed: Math.floor(Math.random() * (Math.pow(2, 31) - 1)),
     });
 
     // Upload images to S3

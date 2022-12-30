@@ -47,6 +47,7 @@ export enum ENV_KEYS {
   TWITTER_APP_SECRET = "twitterAppSecret",
   TWITTER_ACCESS_TOKEN = "twitterAccessToken",
   TWITTER_ACCESS_SECRET = "twitterAccessSecret",
+  OPENAI_API_KEY = "openaiApiKey",
 }
 
 export interface Config {
@@ -88,6 +89,7 @@ export interface Config {
   [ENV_KEYS.TWITTER_APP_SECRET]: string;
   [ENV_KEYS.TWITTER_ACCESS_TOKEN]: string;
   [ENV_KEYS.TWITTER_ACCESS_SECRET]: string;
+  [ENV_KEYS.OPENAI_API_KEY]: string;
 }
 
 export const config: Config = {
@@ -140,4 +142,5 @@ export const config: Config = {
   [ENV_KEYS.TWITTER_APP_SECRET]: process.env.TWITTER_APP_SECRET,
   [ENV_KEYS.TWITTER_ACCESS_TOKEN]: process.env.TWITTER_ACCESS_TOKEN,
   [ENV_KEYS.TWITTER_ACCESS_SECRET]: process.env.TWITTER_ACCESS_SECRET,
+  [ENV_KEYS.OPENAI_API_KEY]: process.env.OPENAI_API_KEY,
 };
