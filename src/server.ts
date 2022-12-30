@@ -605,6 +605,8 @@ export const init = (config: Config) => {
       // 3. If image has not been generated, check if invoice has been paid
       if (invoice.is_held) {
         if (process.env.MOCK_IMAGES === "true") {
+          await lightning.settleHodlInvoice(order.invoice_preimage);
+
           const images = [
             "https://cdn.openai.com/labs/images/3D%20render%20of%20a%20cute%20tropical%20fish%20in%20an%20aquarium%20on%20a%20dark%20blue%20background,%20digital%20art.webp?v=1",
             "https://cdn.openai.com/labs/images/An%20armchair%20in%20the%20shape%20of%20an%20avocado.webp?v=1",
