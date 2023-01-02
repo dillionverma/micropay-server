@@ -1,5 +1,6 @@
 import lnService, {
   AuthenticatedLnd,
+  CreateHodlInvoiceResult,
   CreateInvoiceResult,
   GetInvoiceResult,
   GetWalletInfoResult,
@@ -61,6 +62,52 @@ export default class Lightning {
     return invoice;
   }
 
+  /**
+   * Create a HODL Invoice
+   * @param id The payment hash, which is sha256(preimage)
+   * @param description The description of the invoice
+   * @param amount The amount of the invoice
+   * @returns The invoice
+   */
+  public async createHodlInvoice(
+    id: string,
+    description: string,
+    amount: number,
+    expiresAt?: Date
+  ): Promise<CreateHodlInvoiceResult> {
+    const walletInfo = await lnService.createHodlInvoice({
+      lnd: this.lnd,
+      id,
+      description,
+      tokens: amount,
+      expires_at: expiresAt?.toISOString(),
+    });
+    return walletInfo;
+  }
+
+  /**
+   * Settle a HODL Invoice
+   * @param preimage The preimage of the invoice
+   * @returns
+   */
+  public async settleHodlInvoice(preimage: string): Promise<void> {
+    await lnService.settleHodlInvoice({
+      lnd: this.lnd,
+      secret: preimage,
+    });
+  }
+
+  /**
+   * Cancel a HODL Invoice
+   * @param invoiceId The invoice id
+   * @returns
+   */
+  public async cancelHodlInvoice(invoiceId: string): Promise<void> {
+    await lnService.cancelHodlInvoice({
+      lnd: this.lnd,
+      id: invoiceId,
+    });
+  }
   /**
    * Get the wallet info
    * @returns The wallet info

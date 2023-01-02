@@ -15,7 +15,7 @@ describe("api", () => {
   let server: Application;
 
   before(() => {
-    server = init({ ...config, port: 3003 });
+    server = init({ ...config, port: 3004 });
   });
 
   describe("GET /", () => {

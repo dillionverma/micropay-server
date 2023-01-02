@@ -6,6 +6,7 @@ export type Order = {
   id: number;
   created_at: Date;
   invoice_id: string;
+  invoice_preimage: string;
   invoice_request: string;
   generated: boolean;
   satoshis: number;
