@@ -47,6 +47,7 @@ jobs:
           DALLE_API_KEY: ${{ secrets.DALLE_API_KEY }}
           DALLE_QUEUE_NAME: ${{ secrets.DALLE_QUEUE_NAME }}
           STABLE_DIFFUSION_QUEUE_NAME: ${{ secrets.STABLE_DIFFUSION_QUEUE_NAME }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
 
       - name: Get test coverage
         uses: codecov/codecov-action@v3
