@@ -173,18 +173,6 @@ export const init = (config: Config) => {
     ) => {
       const { prompt } = req.body;
 
-      const isValid = await dalle2.isTokenValid();
-      const text =
-        process.env.NODE_ENV === "production"
-          ? "Production: OpenAI Token expired"
-          : "Dev: Open AI Token expired";
-      if (!isValid) {
-        await telegramBot.sendMessageToAdmins(text);
-        return res
-          .status(StatusCodes.INTERNAL_SERVER_ERROR)
-          .send({ error: "Dalle token has expired" });
-      }
-
       try {
         // https://bitcoin.stackexchange.com/questions/85951/whats-the-maximum-size-of-the-memo-in-a-ln-payment-request
 
