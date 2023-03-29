@@ -46,7 +46,7 @@ describe("Replicate API", () => {
     openai = new OpenAI(config.openaiApiKey);
   });
 
-  describe.only("Generate 1 image using replicate API", () => {
+  describe("Generate 1 image using replicate API", () => {
     it("should generate images", async () => {
       let prompt: string = getRandomElement(officialPrompts);
       try {
