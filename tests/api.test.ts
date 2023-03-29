@@ -15,6 +15,7 @@ describe("api", () => {
   let server: Application;
 
   before(() => {
+    console.log("CONFIG", config);
     server = init({ ...config, port: 3004 });
   });
 
