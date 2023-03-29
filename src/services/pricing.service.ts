@@ -1,7 +1,7 @@
 import axios from "axios";
+import { SATOSHI_PER_BTC } from "../consts";
 import { prisma } from "../db/prisma.service";
 import { TaskParams } from "../jobs/task.job";
-import { SATOSHI_PER_BTC } from "./../../../lightning-api-frontend/src/consts/index";
 
 export default class Pricing {
   constructor() {}
