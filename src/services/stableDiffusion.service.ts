@@ -38,9 +38,10 @@ export default class Stability {
     const urls: string[] = await Promise.all(
       images.map((image: StabilityResponse) =>
         aws.uploadImageBufferToS3(
+          config.awsStableDiffusionBucketName,
           image.buffer,
           image.filePath.split("/").pop(),
-          config.awsStableDiffusionBucketName
+          "png"
         )
       )
     );

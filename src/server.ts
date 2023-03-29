@@ -1,26 +1,39 @@
+import axios from "axios";
+import { bech32 } from "bech32";
 import { Job } from "bullmq";
+import ConnectRedis from "connect-redis";
 import cookieParser from "cookie-parser";
 import cors from "cors";
-import crypto from "crypto";
+import crypto, { randomBytes } from "crypto";
 import express, { Request } from "express";
 import rateLimit from "express-rate-limit";
+import session from "express-session";
+import createError from "http-errors";
 import { StatusCodes } from "http-status-codes";
+import passport from "passport";
+import { Strategy as DiscordStrategy } from "passport-discord";
+import { OAuth2Strategy as GoogleStrategy } from "passport-google-oauth";
+import LnurlAuth from "passport-lnurl-auth";
 import RedisStore from "rate-limit-redis";
+import secp256k1 from "secp256k1";
 import { Config, config } from "./config";
+import { prisma } from "./db/prisma.service";
+import { checkInvoiceQueue } from "./jobs/checkInvoice.job";
 import { generationQueue } from "./jobs/dalle2.job";
 import { stableDiffusionQueue } from "./jobs/stableDiffusion.job";
+import { generateQueue, TaskParams } from "./jobs/task.job";
 import AWS from "./services/aws.service";
 import Dalle2 from "./services/dalle2.service";
 import Lightning from "./services/lightning.service";
+import OpenAI from "./services/openai.service";
+import Pricing from "./services/pricing.service";
+import { connection } from "./services/redis.service";
 import Sentry from "./services/sentry.service";
 import Stability from "./services/stableDiffusion.service";
 import { Order, supabase } from "./services/supabase.service";
 import { TelegramBot } from "./services/telegram.service";
-
-import OpenAI from "./services/openai.service";
-import { connection } from "./services/redis.service";
 import Twitter from "./services/twitter.service";
-import { getHost, sleep } from "./utils";
+import { exclude, getHost, sleep } from "./utils";
 
 export const lightning = new Lightning(
   config.lndMacaroonInvoice,
@@ -37,15 +50,27 @@ export const twitter = new Twitter(
 
 export const openai = new OpenAI(config.openaiApiKey);
 
+const hostURL = () => {
+  if (process.env.NODE_ENV === "production") {
+    return "https://micropay.ai";
+  } else {
+    return "http://localhost:3000";
+  }
+};
+
+export const pricing = new Pricing();
+
+BigInt.prototype.toJSON = function () {
+  return this.toString();
+};
+
 export const BUCKET_NAME = "dalle2-lightning";
 // create a sha256 hash function
 const sha256 = (data: string | Buffer) => {
   return crypto.createHash("sha256").update(data).digest("hex");
 };
 
-const randomBytes = () => crypto.randomBytes(32);
-
-const apiLimiter = rateLimit({
+const sdLimiter = rateLimit({
   windowMs: 12 * 60 * 60 * 1000, // 12 hour window
   max: 9, // Limit each IP to 9 requests per `window`
   standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
@@ -56,7 +81,23 @@ const apiLimiter = rateLimit({
   }),
 });
 
-export const aws = new AWS(config.awsAccessKey, config.awsSecretKey);
+const apiLimiter = rateLimit({
+  windowMs: 1 * 60 * 60 * 1000, // 1 hour window
+  max: 300, // Limit each IP to 300 requests per `window`
+  standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
+  legacyHeaders: false, // Disable the `X-RateLimit-*` headers
+  // Redis store configuration
+  store: new RedisStore({
+    sendCommand: (...args: string[]) => connection.call(...args),
+  }),
+});
+
+export const aws = new AWS(
+  config.cloudflareAccountId,
+  config.awsAccessKey,
+  config.awsSecretKey
+);
+
 export const dalle2 = new Dalle2(config.dalleApiKey, config.dalleSecretKey);
 export const stability = new Stability(config.stabilityApiKey);
 
@@ -134,6 +175,13 @@ const sendMockImages = async (res, prompt) => {
   });
 };
 
+const isAuthenticated = (req, res, next) => {
+  if (req.isAuthenticated()) {
+    return next();
+  }
+  next(createError(StatusCodes.UNAUTHORIZED, "Unauthorized user"));
+};
+
 export const init = (config: Config) => {
   const app = express();
 
@@ -143,27 +191,1012 @@ export const init = (config: Config) => {
   // TracingHandler creates a trace for every incoming request
   app.use(Sentry.Handlers.tracingHandler());
 
-  app.use(cors({ credentials: true, origin: true }));
+  app.use(
+    cors({
+      credentials: true, // allow session cookie from browser to pass through
+      origin: ["http://localhost:3000", "https://micropay.ai"], // allow to server to accept request from different origin
+      methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
+      // allowedHeaders: "Content-Type, Authorization, X-Requested-With",
+    })
+  );
+
   app.set("trust proxy", true);
   app.use(cookieParser());
 
   app.use(express.urlencoded({ extended: true })); // parse application/x-www-form-urlencoded
   app.use(express.json()); // parse application/json
 
-  app.get("/", async (req, res) => {
+  app.use(
+    session({
+      store: new (ConnectRedis(session))({ client: connection }),
+      resave: false,
+      saveUninitialized: false,
+      secret: "SECRET",
+      // name: "micropay-auth",
+      cookie: {
+        // maxAge: 1000 * 60 * 60 * 24 * 1,
+        sameSite: "lax",
+        secure: process.env.NODE_ENV === "development" ? false : true,
+      }, // 1 day expiration
+    })
+  );
+
+  app.use(passport.initialize());
+  app.use(passport.session());
+
+  passport.serializeUser(function (user, cb) {
+    cb(null, user.id);
+  });
+
+  passport.deserializeUser(async function (id: string, cb) {
+    console.log("deserialize: ", id);
+    const user = await prisma.user.findUnique({
+      where: {
+        id,
+      },
+      include: {
+        _count: {
+          select: {
+            followers: true,
+            following: true,
+          },
+        },
+      },
+    });
+
+    cb(null, user);
+  });
+
+  passport.use(
+    new LnurlAuth.Strategy(async function (linkingPublicKey: string, done) {
+      const account = await prisma.account.upsert({
+        where: {
+          linkingPublicKey,
+        },
+        update: {
+          linkingPublicKey,
+        },
+        create: {
+          type: "lnurl-auth",
+          linkingPublicKey,
+          user: {
+            create: {
+              name: linkingPublicKey.slice(0, 10),
+              username: linkingPublicKey.slice(0, 10),
+              email: null,
+              image: null,
+            },
+          },
+        },
+        include: {
+          user: {
+            include: {
+              _count: {
+                select: {
+                  followers: true,
+                  following: true,
+                },
+              },
+            },
+          },
+        },
+      });
+      done(null, account.user);
+    })
+  );
+
+  app.use(passport.authenticate("lnurl-auth"));
+
+  const map = {
+    session: new Map(),
+  };
+
+  app.get("/api/auth/lightning", async (req, res) => {
+    let k1 = generatek1();
+    map.session.set(k1, req.session);
+
+    const lnauth = await prisma.lnAuth.create({
+      data: {
+        k1,
+      },
+    });
+
+    return res.status(200).json({
+      status: "OK",
+      url: encodedUrl(
+        process.env.NODE_ENV === "development"
+          ? "https://6466-2607-fea8-5a1-4f00-55ee-c6f5-b58a-841f.ngrok.io/api/auth/lightning/callback"
+          : "https://micropay.ai/api/auth/lightning/callback",
+        "login",
+        lnauth.k1
+      ),
+    });
+  });
+
+  app.get(
+    "/api/auth/lightning/callback", // THIS CANNOT BE CHANGED BECAUSE USERS WILL NOT BE ABLE TO LOGIN AGAIN
+    async (
+      req: Request<
+        unknown,
+        unknown,
+        unknown,
+        { sig: string; k1: string; key: string }
+      >,
+      res
+    ) => {
+      // https://github.com/stackernews/stacker.news/blob/master/pages/api/lnauth.js
+      if (req.query.k1 || req.query.key || req.query.sig) {
+        let session: Request["session"] | null = null;
+        session = map.session.get(req.query.k1);
+
+        try {
+          const sig = Buffer.from(req.query.sig, "hex");
+          const k1 = Buffer.from(req.query.k1, "hex");
+          const key = Buffer.from(req.query.key, "hex");
+          const signature = secp256k1.signatureImport(sig);
+
+          if (!secp256k1.ecdsaVerify(signature, k1, key))
+            return res
+              .status(400)
+              .json({ status: "ERROR", reason: "invalid signature" });
+
+          const auth = await prisma.lnAuth.findUnique({
+            where: { k1: req.query.k1 },
+          });
+
+          if (
+            !auth ||
+            auth.linkingPublicKey ||
+            auth.createdAt < new Date(Date.now() - 1000 * 60 * 60) // 1 hour
+          ) {
+            return res
+              .status(400)
+              .json({ status: "ERROR", reason: "token expired" });
+          }
+
+          // session.lnurlAuth = session.lnurlAuth || {};
+          // session.user = session.user || {};
+          // session.lnurlAuth.linkingPublicKey = req.query.key;
+
+          const account = await prisma.account.upsert({
+            where: {
+              linkingPublicKey: req.query.key,
+            },
+            create: {
+              type: "lnurl-auth",
+              linkingPublicKey: req.query.key,
+              user: {
+                create: {
+                  name: req.query.key.slice(0, 10),
+                  username: req.query.key.slice(0, 10),
+                  email: null,
+                  image: null,
+                },
+              },
+            },
+            update: {
+              type: "lnurl-auth",
+              linkingPublicKey: req.query.key,
+            },
+            include: {
+              user: true,
+            },
+          });
+
+          // session.user = account.user;
+          session.passport = session.passport || {};
+          session.passport.user = account.user.id;
+
+          return new Promise<void>((resolve, reject) => {
+            return session.save((error) => {
+              if (error) return reject(error);
+              // Overwrite the req.session object.
+              // Fix when the express-session option "resave" is set to true.
+              req.session = session;
+              res.status(200).json({ status: "OK" });
+              resolve();
+            });
+          });
+        } catch (error) {
+          console.log("ERROR");
+          console.log(error);
+        }
+      }
+
+      console.log("ERROR RETURN");
+
+      // https://github.com/lnurl/luds/blob/luds/04.md#wallet-to-service-interaction-flow
+      let reason = "signature verification failed";
+      if (!req.query.sig) {
+        reason = "no sig query variable provided";
+      } else if (!req.query.k1) {
+        reason = "no k1 query variable provided";
+      } else if (!req.query.key) {
+        reason = "no key query variable provided";
+      }
+      return res.status(400).json({ status: "ERROR", reason });
+    }
+  );
+
+  function encodedUrl(iurl, tag, k1) {
+    const url = new URL(iurl);
+    url.searchParams.set("tag", tag);
+    url.searchParams.set("k1", k1);
+    // bech32 encode url
+    const words = bech32.toWords(Buffer.from(url.toString(), "utf8"));
+    return bech32.encode("lnurl", words, 1023);
+  }
+
+  function generatek1() {
+    return randomBytes(32).toString("hex");
+  }
+
+  passport.use(
+    new GoogleStrategy(
+      {
+        clientID: config.googleClientId,
+        clientSecret: config.googleClientSecret,
+        callbackURL: "/api/auth/google/callback",
+      },
+      async function (accessToken, refreshToken, profile, done) {
+        const account = await prisma.account.upsert({
+          where: {
+            provider_providerAccountId: {
+              provider: "google",
+              providerAccountId: profile.id,
+            },
+          },
+          update: {
+            refresh_token: refreshToken,
+            access_token: accessToken,
+          },
+          create: {
+            type: "oauth",
+            provider: "google",
+            providerAccountId: profile.id,
+            refresh_token: refreshToken,
+            access_token: accessToken,
+            user: {
+              create: {
+                name: profile.displayName,
+                username: profile.emails[0].value.split("@")[0],
+                email: profile.emails[0].value,
+                // emailVerified: profile.emails[0].verified,
+                image: profile.photos[0].value,
+              },
+            },
+          },
+          include: {
+            user: true,
+          },
+        });
+        return done(null, account.user);
+      }
+    )
+  );
+
+  passport.use(
+    new DiscordStrategy(
+      {
+        clientID: config.discordClientId,
+        clientSecret: config.discordClientSecret,
+        callbackURL: "/api/auth/discord/callback",
+        scope: ["identify", "email"],
+      },
+      async function (accessToken, refreshToken, profile, done) {
+        console.log(profile);
+        console.log(accessToken, refreshToken);
+        const account = await prisma.account.upsert({
+          where: {
+            provider_providerAccountId: {
+              provider: "discord",
+              providerAccountId: profile.id,
+            },
+          },
+          update: {
+            refresh_token: refreshToken,
+            access_token: accessToken,
+          },
+          create: {
+            type: "oauth",
+            provider: "discord",
+            providerAccountId: profile.id,
+            refresh_token: refreshToken,
+            access_token: accessToken,
+            user: {
+              create: {
+                name: profile.username,
+                email: profile.email,
+                image: profile.image_url,
+                username: profile.username,
+              },
+            },
+          },
+          include: {
+            user: true,
+          },
+        });
+        return done(null, account.user);
+      }
+    )
+  );
+
+  app.get("/", isAuthenticated, async (req, res, next) => {
     res.status(StatusCodes.OK).send("Hello World");
   });
 
-  // app.get("/tweet", async (req, res) => {
-  //   const images = [
-  //     "https://cdn.openai.com/labs/images/3D%20render%20of%20a%20cute%20tropical%20fish%20in%20an%20aquarium%20on%20a%20dark%20blue%20background,%20digital%20art.webp?v=1",
-  //     "https://cdn.openai.com/labs/images/An%20armchair%20in%20the%20shape%20of%20an%20avocado.webp?v=1",
-  //     "https://cdn.openai.com/labs/images/An%20expressive%20oil%20painting%20of%20a%20basketball%20player%20dunking,%20depicted%20as%20an%20explosion%20of%20a%20nebula.webp?v=1",
-  //     "https://cdn.openai.com/labs/images/A%20photo%20of%20a%20white%20fur%20monster%20standing%20in%20a%20purple%20room.webp?v=1",
-  //   ];
-  //   await twitter.tweetImages(images, "This is a prompt");
-  //   res.status(StatusCodes.OK).send("Tweeted");
-  // });
+  app.get("/api/me", isAuthenticated, async (req, res, next) => {
+    res.status(StatusCodes.OK).send(req.user);
+  });
+
+  app.put(
+    "/api/me",
+    isAuthenticated,
+    async (
+      req: Request<
+        unknown,
+        unknown,
+        { name?: string; username?: string; image?: string },
+        unknown
+      >,
+      res
+    ) => {
+      const user = await prisma.user.update({
+        where: {
+          id: req.user.id,
+        },
+        data: {
+          name: req.body.name,
+          username: req.body.username,
+          image: req.body.image,
+        },
+      });
+      res.status(StatusCodes.OK).send(user);
+    }
+  );
+
+  app.delete("/api/auth", isAuthenticated, async (req, res, next) => {
+    res.clearCookie("connect.sid");
+    req.logOut(function (err) {
+      if (err) return next(err);
+      return res.status(StatusCodes.OK).send("Logged out");
+    });
+  });
+
+  app.get(
+    "/api/auth/google",
+    passport.authenticate("google", {
+      scope: ["profile", "email"],
+    })
+  );
+
+  app.get(
+    "/api/auth/discord",
+    passport.authenticate("discord", { scope: ["identify", "email"] })
+  );
+
+  app.get(
+    "/api/auth/google/callback",
+    passport.authenticate("google", {
+      failureRedirect: "/error",
+      session: true,
+    }),
+    function (req, res) {
+      res.redirect(hostURL());
+    }
+  );
+
+  app.get(
+    "/api/auth/discord/callback",
+    passport.authenticate("discord", {
+      failureRedirect: "/error",
+      session: true,
+    }),
+    function (req, res) {
+      res.redirect(hostURL());
+    }
+  );
+
+  app.post(
+    "/api/generations/:id/like",
+    isAuthenticated,
+    async (req: Request<{ id: string }, unknown, unknown, unknown>, res) => {
+      const { id } = req.params;
+      const imageId = req.params.id;
+      const userId = req.user.id;
+
+      if (!id)
+        return res
+          .status(StatusCodes.BAD_REQUEST)
+          .json({ message: "missing id" });
+
+      try {
+        const like = await prisma.like.create({
+          data: {
+            userId,
+            imageId,
+          },
+        });
+        return res.json({ like });
+      } catch (e) {
+        console.error(e);
+      }
+    }
+  );
+
+  app.delete(
+    "/api/generations/:id/like",
+    isAuthenticated,
+    async (req: Request<{ id: string }, unknown, unknown, unknown>, res) => {
+      const { id } = req.params;
+
+      const imageId = req.params.id;
+      const userId = req.user.id;
+
+      if (!id)
+        return res
+          .status(StatusCodes.BAD_REQUEST)
+          .json({ message: "missing id" });
+
+      try {
+        const like = await prisma.like.delete({
+          where: {
+            userId_imageId: {
+              userId,
+              imageId,
+            },
+          },
+        });
+        return res.json({ like });
+      } catch (e) {
+        console.error(e);
+      }
+    }
+  );
+
+  app.get(
+    "/api/generations/:id",
+    async (req: Request<{ id: string }, unknown, unknown, unknown>, res) => {
+      const { id } = req.params;
+
+      if (!id)
+        return res
+          .status(StatusCodes.BAD_REQUEST)
+          .json({ message: "missing id" });
+
+      try {
+        const image = await prisma.image.findUnique({
+          where: {
+            id,
+          },
+          include: {
+            task: {
+              include: {
+                model: true,
+              },
+            },
+            user: {
+              select: {
+                id: true,
+                username: true,
+                image: true,
+              },
+            },
+          },
+        });
+        return res.json({ image });
+      } catch (e) {
+        console.error(e);
+      }
+    }
+  );
+
+  app.get(
+    "/api/generations",
+    async (
+      req: Request<
+        unknown,
+        unknown,
+        unknown,
+        { userId: string; skip: string; take: string; liked: string }
+      >,
+      res
+    ) => {
+      const { skip, take, userId, liked } = req.query;
+
+      if (liked === "true") {
+        try {
+          const images = await prisma.image.findMany({
+            include: {
+              likes: {
+                where: {
+                  userId: userId,
+                },
+              },
+              user: {
+                select: {
+                  id: true,
+                  username: true,
+                  image: true,
+                },
+              },
+              model: true,
+              task: true,
+            },
+            orderBy: {
+              createdAt: "desc",
+            },
+            // skip: parseInt(skip) || 0,
+            // take: parseInt(take) || 30,
+          });
+
+          // Doing skip / take in memory in javascript.
+          // Couldn't figure out how to do it in prisma
+          // TODO: Ideally this would be done in the database
+          const likes = images
+            .filter((i) => {
+              return i.likes.some((l) => l.userId === userId);
+            })
+            .splice(parseInt(skip) || 0, parseInt(skip) + parseInt(take) || 30);
+
+          return res.json({ images: likes });
+        } catch (e) {
+          console.error(e);
+        }
+      }
+
+      if (userId) {
+        try {
+          const images = await prisma.image.findMany({
+            where: {
+              userId: userId,
+            },
+            include: {
+              likes: true,
+              user: {
+                select: {
+                  id: true,
+                  username: true,
+                  image: true,
+                },
+              },
+              model: true,
+              task: true,
+            },
+            orderBy: {
+              createdAt: "desc",
+            },
+            skip: parseInt(skip) || 0,
+            take: parseInt(take) || 30,
+          });
+          return res.json({ images });
+        } catch (e) {
+          console.error(e);
+        }
+      } else {
+        try {
+          const images = await prisma.image.findMany({
+            include: {
+              likes: true,
+              user: {
+                select: {
+                  id: true,
+                  username: true,
+                  image: true,
+                },
+              },
+              model: true,
+              task: true,
+            },
+            orderBy: {
+              createdAt: "desc",
+            },
+            skip: parseInt(skip) || 0,
+            take: parseInt(take) || 30,
+          });
+          return res.json({ images });
+        } catch (e) {
+          console.error(e);
+        }
+      }
+    }
+  );
+
+  app.get(
+    "/api/user/:id",
+    async (req: Request<{ id: string }, unknown, unknown, unknown>, res) => {
+      const id = req.params.id;
+      console.log("id", req.params);
+
+      if (!id)
+        return res
+          .status(StatusCodes.BAD_REQUEST)
+          .json({ message: "missing id" });
+
+      try {
+        const user = await prisma.user.findUnique({
+          where: {
+            id,
+          },
+          include: {
+            images: true,
+            followers: true,
+            following: true,
+          },
+        });
+
+        const reducedUser = exclude(user, [
+          "sats",
+          "email",
+          "emailVerified",
+          "name",
+        ]);
+        // TODO: Include follower and following count
+        return res.json({ user: reducedUser });
+      } catch (e) {
+        console.error(e);
+      }
+    }
+  );
+
+  // follow a user endpoint
+  app.post(
+    "/api/user/:id/follow",
+    isAuthenticated,
+    async (req: Request<{ id: string }, unknown, unknown, unknown>, res) => {
+      const followingId = req.params.id;
+      const followerId = req.user.id;
+
+      if (!followingId)
+        return res
+          .status(StatusCodes.BAD_REQUEST)
+          .json({ message: "missing id" });
+
+      try {
+        const follow = await prisma.follows.create({
+          data: {
+            followerId,
+            followingId,
+          },
+        });
+        return res.json({ follow });
+      } catch (e) {
+        console.error(e);
+      }
+    }
+  );
+
+  // unfollow a user endpoint
+  app.post(
+    "/api/user/:id/unfollow",
+    isAuthenticated,
+    async (req: Request<{ id: string }, unknown, unknown, unknown>, res) => {
+      const followingId = req.params.id;
+      const followerId = req.user.id;
+
+      if (!followingId)
+        return res
+          .status(StatusCodes.BAD_REQUEST)
+          .json({ message: "missing id" });
+
+      try {
+        const follow = await prisma.follows.delete({
+          where: {
+            followerId_followingId: {
+              followerId,
+              followingId,
+            },
+          },
+        });
+        return res.json({ follow });
+      } catch (e) {
+        console.error(e);
+      }
+    }
+  );
+
+  app.get(
+    "/api/models",
+    async (req: Request<unknown, unknown, unknown, unknown>, res) => {
+      const models = await prisma.model.findMany({
+        where: {
+          active: true,
+        },
+        select: {
+          id: true,
+          name: true,
+          description: true,
+          author: true,
+          authorUrl: true,
+          unitPriceUSD: true,
+          createdAt: true,
+          updatedAt: true,
+        },
+      });
+      return res.json({ models });
+    }
+  );
+
+  const getPrice = async (modelId: string, numImages: number) => {
+    // // https://openai.com/pricing
+    // const model = await prisma.model.findUnique({
+    //   where: {
+    //     id: modelId,
+    //   },
+    // });
+  };
+
+  app.post(
+    "/api/task",
+    isAuthenticated,
+    async (
+      req: Request<unknown, unknown, TaskParams, { ids: string }>,
+      res
+    ) => {
+      console.log(req.body);
+
+      const params = {
+        prompt: req.body.prompt,
+        negative_prompt: req.body.negative_prompt,
+        width: req.body.width,
+        height: req.body.height,
+        guidance_scale: req.body.guidance_scale,
+        num_inference_steps: req.body.num_inference_steps,
+        num_images: req.body.num_images,
+        file_type: req.body.file_type,
+        modelId: req.body.modelId,
+        userId: req.user.id,
+      };
+
+      // first get the model price
+      const model = await prisma.model.findUnique({
+        where: {
+          id: req.body.modelId,
+        },
+      });
+
+      if (!model) {
+        return res.status(StatusCodes.BAD_REQUEST).json({
+          message: "model not found",
+        });
+      }
+
+      const price = await pricing.getPrice(req.body.modelId, params);
+
+      if (BigInt(price) > req.user.sats) {
+        return res.status(StatusCodes.BAD_REQUEST).json({
+          message: `insufficient funds, add ${
+            BigInt(price) - req.user.sats
+          } more sats to continue`,
+        });
+      }
+
+      const task = await prisma.task.create({
+        data: {
+          params: {
+            prompt: req.body.prompt,
+            negative_prompt: req.body.negative_prompt,
+            width: req.body.width,
+            height: req.body.height,
+            guidance_scale: req.body.guidance_scale,
+            num_inference_steps: req.body.num_inference_steps,
+            num_images: req.body.num_images,
+            file_type: req.body.file_type,
+          },
+          user: {
+            connect: {
+              id: req.user.id,
+            },
+          },
+          model: {
+            connect: {
+              id: req.body.modelId,
+            },
+          },
+        },
+      });
+
+      const job = await generateQueue.add("generate", params, {
+        jobId: task.id,
+      });
+
+      return res.json({ id: task.id });
+    }
+  );
+
+  app.get("/api/task/:id", async (req, res) => {
+    const id = req.params.id;
+    const job = await generateQueue.getJob(id);
+
+    if (!job) {
+      return res.status(StatusCodes.NOT_FOUND).json({ message: "Not found" });
+    }
+
+    const status = await job.getState();
+
+    if (status === "completed") {
+      const images = await prisma.image.findMany({
+        where: { taskId: id },
+      });
+      return res.json({ id, status, images });
+    }
+    return res.json({ id, status });
+  });
+
+  app.get(
+    "/api/tasks",
+    async (req: Request<unknown, unknown, unknown, { ids: string }>, res) => {
+      if (!req.query.ids) {
+        return res
+          .status(StatusCodes.BAD_REQUEST)
+          .send({ message: "Need to pass ids in query parameters" });
+      }
+      const { ids } = req.query;
+      const idsArray = ids.split(",");
+
+      const tasks = await Promise.all(
+        idsArray.map(async (id) => {
+          const job = await generateQueue.getJob(id);
+
+          if (!job) {
+            return { id, status: "failed" };
+          }
+          const status = await job.getState();
+
+          if (status === "completed") {
+            const images = await prisma.image.findMany({
+              where: { taskId: id },
+              include: {
+                likes: true,
+                user: {
+                  select: {
+                    id: true,
+                    username: true,
+                    image: true,
+                  },
+                },
+                model: true,
+                task: true,
+              },
+              orderBy: {
+                createdAt: "desc",
+              },
+            });
+
+            return { id, status, images, params: job.data };
+          }
+          return { id, status, params: job.data };
+        })
+      );
+
+      return res.json({ tasks });
+    }
+  );
+
+  app.get("/api/pricing", async (req, res) => {
+    const bitcoinPrice = await axios.get(
+      "https://api.coindesk.com/v1/bpi/currentprice.json"
+    );
+    const bitcoinPriceUSD = bitcoinPrice.data.bpi.USD.rate_float;
+
+    return res.json({
+      bitcoinPriceUSD,
+    });
+  });
+
+  app.get(
+    "/api/invoice",
+    isAuthenticated,
+    // invoiceLimiter,
+    async (
+      req: Request<
+        unknown,
+        unknown,
+        unknown,
+        { amount: string; quick: string }
+      >,
+      res
+    ) => {
+      if (!req.query.amount) {
+        return res
+          .status(StatusCodes.BAD_REQUEST)
+          .send({ error: "Missing amount" });
+      }
+
+      const amount = parseInt(req.query.amount);
+
+      if (!Number.isInteger(amount)) {
+        return res
+          .status(StatusCodes.BAD_REQUEST)
+          .send({ error: "Amount must be an integer" });
+      }
+
+      try {
+        const invoice = await lightning.createInvoice(
+          `Deposit for https://micropay.ai`,
+          amount
+        );
+
+        await prisma.invoice.create({
+          data: {
+            invoiceId: invoice.id,
+            amount: amount,
+            request: invoice.request,
+            quick: req.query.quick === "true",
+            user: {
+              connect: {
+                id: req.user.id,
+              },
+            },
+          },
+        });
+
+        await checkInvoiceQueue.add(
+          "checkInvoice",
+          {
+            id: invoice.id,
+          },
+          {
+            attempts: 21,
+            delay: 5000,
+            backoff: {
+              type: "exponential",
+              delay: 1000,
+            },
+          }
+        );
+
+        return res.status(StatusCodes.OK).send({
+          id: invoice.id,
+          request: invoice.request,
+        });
+      } catch (e) {
+        return res
+          .status(StatusCodes.INTERNAL_SERVER_ERROR)
+          .send({ error: "Error creating invoice" });
+      }
+    }
+  );
+
+  app.get(
+    "/api/invoice/:id",
+    isAuthenticated,
+    apiLimiter,
+    async (req: Request<{ id: string }>, res) => {
+      try {
+        const invoice = await lightning.getInvoice(req.params.id);
+
+        if (invoice.is_confirmed) {
+          const invoiceRecord = await prisma.invoice.findUnique({
+            where: {
+              invoiceId: req.params.id,
+            },
+          });
+
+          if (!invoiceRecord.confirmed) {
+            await prisma.invoice.update({
+              where: {
+                invoiceId: req.params.id,
+              },
+              data: {
+                confirmed: true,
+                confirmedAt: new Date(invoice.confirmed_at),
+              },
+            });
+          }
+        }
+
+        return res.status(StatusCodes.OK).send({
+          confirmed: invoice.is_confirmed,
+          amount: invoice.tokens,
+        });
+      } catch (e) {
+        return res
+          .status(StatusCodes.NOT_FOUND)
+          .send({ error: "Invoice not found" });
+      }
+    }
+  );
 
   app.post(
     "/invoice",
@@ -176,7 +1209,7 @@ export const init = (config: Config) => {
       try {
         // https://bitcoin.stackexchange.com/questions/85951/whats-the-maximum-size-of-the-memo-in-a-ln-payment-request
 
-        const preimage = randomBytes();
+        const preimage = randomBytes(32);
         const id = sha256(preimage);
         const expiresAt = new Date();
         expiresAt.setSeconds(expiresAt.getSeconds() + 600); // 10 minutes to pay invoice
@@ -242,7 +1275,7 @@ export const init = (config: Config) => {
 
   app.post(
     "/generate/stable-diffusion",
-    apiLimiter,
+    sdLimiter,
     async (
       req: Request<unknown, unknown, { prompt: string }, unknown>,
       res
@@ -662,6 +1695,27 @@ export const init = (config: Config) => {
         .status(StatusCodes.INTERNAL_SERVER_ERROR)
         .send({ error: e.message });
     }
+  });
+
+  // catch 404 and forward to error handler
+  app.use(function (req, res, next) {
+    // (req, res, next) => {
+    // const routePromise = fn(req, res, next);
+    // if (routePromise.catch) {
+    //   routePromise.catch((err) => next(err));
+    // }
+    // // }
+    next(createError(404));
+  });
+
+  // error handler
+  app.use(function (err, req, res, next) {
+    res.status(err.status || 500);
+    res.json({
+      message: err.message,
+      error: process.env.NODE_ENV === "development" ? err : {},
+    });
+    next();
   });
 
   app.use(Sentry.Handlers.errorHandler());

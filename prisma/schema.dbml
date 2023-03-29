@@ -1,0 +1,159 @@
+//// ------------------------------------------------------
+//// THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
+//// ------------------------------------------------------
+
+Table Model {
+  id String [unique, not null]
+  name String [not null]
+  author String [not null]
+  authorUrl String [not null]
+  description String [not null]
+  modelKey String
+  active Boolean [not null, default: true]
+  unitPriceUSD Float [not null, default: 0]
+  task Task [not null]
+  image Image [not null]
+  createdAt DateTime [default: `now()`, not null]
+  updatedAt DateTime [not null]
+}
+
+Table Task {
+  id String [unique, not null]
+  params Json [not null]
+  images Image [not null]
+  user User [not null]
+  userId String [not null]
+  model Model [not null]
+  modelId String [not null]
+  createdAt DateTime [default: `now()`, not null]
+  updatedAt DateTime [not null]
+}
+
+Table Image {
+  id String [unique, not null]
+  width Int [not null]
+  height Int [not null]
+  format String
+  url String
+  thumbnailUrl String
+  views BigInt [not null, default: 0]
+  likes Like [not null]
+  user User [not null]
+  userId String [not null]
+  task Task [not null]
+  taskId String [not null]
+  model Model [not null]
+  modelId String [not null]
+  createdAt DateTime [default: `now()`, not null]
+  updatedAt DateTime [not null]
+}
+
+Table Like {
+  user User [not null]
+  userId String [not null]
+  image Image [not null]
+  imageId String [not null]
+  createdAt DateTime [default: `now()`, not null]
+
+  indexes {
+    (userId, imageId) [pk]
+  }
+}
+
+Table Follows {
+  follower User [not null]
+  followerId String [not null]
+  following User [not null]
+  followingId String [not null]
+  createdAt DateTime [default: `now()`, not null]
+
+  indexes {
+    (followerId, followingId) [pk]
+  }
+}
+
+Table User {
+  id String [unique, not null]
+  username String [not null]
+  name String
+  email String [unique]
+  emailVerified DateTime
+  image String
+  sats BigInt [not null, default: 0]
+  accounts Account [not null]
+  tasks Task [not null]
+  images Image [not null]
+  likes Like [not null]
+  invoices Invoice [not null]
+  followers Follows [not null]
+  following Follows [not null]
+  createdAt DateTime [default: `now()`, not null]
+  updatedAt DateTime [not null]
+}
+
+Table Invoice {
+  id String [unique, not null]
+  invoiceId String [unique, not null]
+  amount Int [not null]
+  request String [not null]
+  confirmed Boolean [not null, default: false]
+  confirmedAt DateTime
+  quick Boolean [not null, default: false]
+  user User [not null]
+  userId String [not null]
+  createdAt DateTime [default: `now()`, not null]
+  updatedAt DateTime [not null]
+}
+
+Table Account {
+  id String [pk]
+  userId String [not null]
+  type String [not null]
+  provider String
+  providerAccountId String
+  refresh_token String
+  access_token String
+  expires_at Int
+  token_type String
+  scope String
+  id_token String
+  session_state String
+  linkingPublicKey String [unique]
+  user User [not null]
+  createdAt DateTime [default: `now()`, not null]
+  updatedAt DateTime [not null]
+
+  indexes {
+    (provider, providerAccountId) [unique]
+  }
+}
+
+Table LnAuth {
+  id String [pk]
+  k1 String [unique, not null]
+  linkingPublicKey String
+  createdAt DateTime [default: `now()`, not null]
+  updatedAt DateTime [not null]
+}
+
+Ref: Task.userId > User.id
+
+Ref: Task.modelId > Model.id
+
+Ref: Image.userId > User.id
+
+Ref: Image.taskId > Task.id
+
+Ref: Image.modelId > Model.id
+
+Ref: Like.userId > User.id
+
+Ref: Like.imageId > Image.id
+
+Ref: Follows.followerId > User.id
+
+Ref: Follows.followingId > User.id
+
+Ref: Invoice.userId > User.id
+
+Ref: Account.userId > User.id [delete: Cascade]

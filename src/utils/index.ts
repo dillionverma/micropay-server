@@ -17,3 +17,14 @@ export const getRandomElement = (arr: any[]) =>
 export const getHost = (req: Request<any, any, any, any>) => {
   return `${req.protocol}://${req.get("host")}${req.originalUrl}`;
 };
+
+// Exclude keys from user
+export const exclude = <User, Key extends keyof User>(
+  user: User,
+  keys: Key[]
+): Omit<User, Key> => {
+  for (let key of keys) {
+    delete user[key];
+  }
+  return user;
+};

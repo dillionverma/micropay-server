@@ -93,9 +93,10 @@ export const generationWorker = new Worker<GenerateJob>(
       images = await Promise.all(
         imageBuffers.map((buffer) =>
           aws.uploadImageBufferToS3(
+            config.awsDalleBucketName,
             buffer,
-            `${uuidv4()}.png`,
-            config.awsDalleBucketName
+            `${uuidv4()}`,
+            "png"
           )
         )
       );
