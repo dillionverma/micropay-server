@@ -62,7 +62,7 @@ describe("Replicate API", () => {
           },
           {
             headers: {
-              authorization: `Token ${config.replicateApiKey}}`,
+              // authorization: `Token ${config.replicateApiKey}}`,
             },
           }
         );

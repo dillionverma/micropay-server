@@ -521,7 +521,7 @@ export const init = (config: Config) => {
     )
   );
 
-  app.get("/", isAuthenticated, async (req, res, next) => {
+  app.get("/", async (req, res, next) => {
     res.status(StatusCodes.OK).send("Hello World");
   });
 

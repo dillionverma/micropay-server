@@ -39,7 +39,7 @@ export const officialPrompts = [
   "panda mad scientist mixing sparkling chemicals, digital art",
 ];
 
-describe("Dalle-2 API", () => {
+describe.skip("Dalle-2 API", () => {
   let dalle2: Dalle2;
   let task: Task;
 

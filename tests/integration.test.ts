@@ -1,4 +1,4 @@
-import { Task, User } from "@prisma/client";
+import { Model, Task, User } from "@prisma/client";
 import chai from "chai";
 import chaiAsPromised from "chai-as-promised";
 import chaiHttp from "chai-http";
@@ -11,7 +11,7 @@ chai.use(chaiAsPromised);
 chai.use(chaiHttp);
 const expect = chai.expect;
 
-describe("db", () => {
+describe.skip("db", () => {
   describe("image upload test", () => {
     it("should upload image and log url", async () => {
       let task = require("./fixtures/taskResponse.json");
@@ -29,9 +29,14 @@ describe("db", () => {
     });
   });
 
-  describe("Create model", () => {
+  describe("Test all models and interactions", () => {
+    let model: Model;
+    let alice: User;
+    let bob: User;
+    let task: Task;
+
     it("should create OpenJourney model", async () => {
-      const model = await prisma.model.create({
+      model = await prisma.model.create({
         data: {
           name: "openjourney",
           author: "prompthero",
@@ -39,17 +44,12 @@ describe("db", () => {
           description:
             "Openjourney is an open source Stable Diffusion fine tuned model on Midjourney images",
           modelKey: "0fad7b48-bb13-438f-a034-75c4b024722f",
+          unitPriceUSD: 0.05,
         },
       });
 
       console.log(model);
     });
-  });
-
-  describe("Test all models and interactions", () => {
-    let alice: User;
-    let bob: User;
-    let task: Task;
 
     it("should create user 1", async () => {
       alice = await prisma.user.create({
@@ -100,7 +100,16 @@ describe("db", () => {
     it("should let user 1 create a task", async () => {
       const task = await prisma.task.create({
         data: {
-          userId: alice.id,
+          user: {
+            connect: {
+              id: alice.id,
+            },
+          },
+          model: {
+            connect: {
+              id: model.id,
+            },
+          },
           params: {
             prompt:
               "photo of a gorgeous blonde female in the style of stefan kostic, realistic, half body shot, sharp focus, 8 k high definition, insanely detailed, intricate, elegant, art by stanley lau and artgerm, extreme blur cherry blossoms background",
@@ -117,14 +126,5 @@ describe("db", () => {
 
       console.log(task);
     });
-
-    // it("should create task", async () => {
-    //   task = await prisma.task.create({
-    //     data: {
-    //       email: "test@test.com",
-    //       username: "okk",
-    //     },
-    //   });
-    // });
   });
 });

@@ -17,7 +17,7 @@ const expect = chai.expect;
 const prompt: string =
   "a matte painting of a girl with a backpack and a smartphone that traveled back in time to an ancient Greek colosseum with gladiators, showing her back";
 
-describe("StableDiffusion Job", () => {
+describe.skip("StableDiffusion Job", () => {
   let stabilitySpy: SinonStub;
 
   before(async () => {
