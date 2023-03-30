@@ -310,7 +310,7 @@ export const init = (config: Config) => {
       url: encodedUrl(
         process.env.NODE_ENV === "development"
           ? "https://6466-2607-fea8-5a1-4f00-55ee-c6f5-b58a-841f.ngrok.io/api/auth/lightning/callback"
-          : "https://micropay.ai/api/auth/lightning/callback",
+          : "https://api.micropay.ai/api/auth/lightning/callback",
         "login",
         lnauth.k1
       ),
