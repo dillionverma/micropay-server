@@ -194,7 +194,11 @@ export const init = (config: Config) => {
   app.use(
     cors({
       credentials: true, // allow session cookie from browser to pass through
-      origin: ["http://localhost:3000", "https://micropay.ai"], // allow to server to accept request from different origin
+      origin: [
+        "http://localhost:3000",
+        "https://micropay.ai",
+        "https://lightning-api-frontend.onrender.com",
+      ], // allow to server to accept request from different origin
       methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
       // allowedHeaders: "Content-Type, Authorization, X-Requested-With",
     })
