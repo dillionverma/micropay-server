@@ -632,12 +632,12 @@
   resolved "https://registry.yarnpkg.com/@opentelemetry/semantic-conventions/-/semantic-conventions-1.11.0.tgz#b7ed9a601acb6e0aef67564b37e4f9abad449170"
   integrity sha512-fG4D0AktoHyHwGhFGv+PzKrZjxbKJfckJauTJdq2A+ej5cTazmNYjJVAODXXkYyrsI10muMl+B1iO2q1R6Lp+w==
 
-"@prisma/client@4.12.0":
-  version "4.12.0"
-  resolved "https://registry.yarnpkg.com/@prisma/client/-/client-4.12.0.tgz#119b692888b1fe0fd3305c7d0e0ac48520aa6839"
-  integrity sha512-j9/ighfWwux97J2dS15nqhl60tYoH8V0IuSsgZDb6bCFcQD3fXbXmxjYC8GHhIgOk3lB7Pq+8CwElz2MiDpsSg==
+"@prisma/client@4.12.0-integration-rtld-deepbind.3":
+  version "4.12.0-integration-rtld-deepbind.3"
+  resolved "https://registry.yarnpkg.com/@prisma/client/-/client-4.12.0-integration-rtld-deepbind.3.tgz#7791cba831dc26d3c5863e7c0b247b175e3c58b3"
+  integrity sha512-IvZc4I+Z97UepsAgqr4adA3318ADGfUJJLbAHjxFNdRRXwPXhBy59Uvn7lB9dodtcir9eVY5diWt6GpToLiGoQ==
   dependencies:
-    "@prisma/engines-version" "4.12.0-67.659ef412370fa3b41cd7bf6e94587c1dfb7f67e7"
+    "@prisma/engines-version" "4.12.0-22.3b9f029aeb9a91829e6648c61146b02f3646d1e7"
 
 "@prisma/debug@4.6.1":
   version "4.6.1"
@@ -668,10 +668,10 @@
     strip-ansi "6.0.1"
     undici "5.11.0"
 
-"@prisma/engines-version@4.12.0-67.659ef412370fa3b41cd7bf6e94587c1dfb7f67e7":
-  version "4.12.0-67.659ef412370fa3b41cd7bf6e94587c1dfb7f67e7"
-  resolved "https://registry.yarnpkg.com/@prisma/engines-version/-/engines-version-4.12.0-67.659ef412370fa3b41cd7bf6e94587c1dfb7f67e7.tgz#51a1cc5c886564b542acde64a873645d0dee2566"
-  integrity sha512-JIHNj5jlXb9mcaJwakM0vpgRYJIAurxTUqM0iX0tfEQA5XLZ9ONkIckkhuAKdAzocZ+80GYg7QSsfpjg7OxbOA==
+"@prisma/engines-version@4.12.0-22.3b9f029aeb9a91829e6648c61146b02f3646d1e7":
+  version "4.12.0-22.3b9f029aeb9a91829e6648c61146b02f3646d1e7"
+  resolved "https://registry.yarnpkg.com/@prisma/engines-version/-/engines-version-4.12.0-22.3b9f029aeb9a91829e6648c61146b02f3646d1e7.tgz#a118f0933525abe139049719e18ab747e629ac33"
+  integrity sha512-c0Jcy/23oDwpVkTjhDJL6dD1QRrGrUTObwGjkS6LJIg5C1D+TFZgYSbZLrJjrioQ6tEXPMPSh9T7dQaXN6EvLw==
 
 "@prisma/engines@4.12.0":
   version "4.12.0"
@@ -5304,7 +5304,7 @@ prisma-dbml-generator@^0.10.0:
     "@prisma/generator-helper" "4.6.1"
     "@prisma/internals" "4.6.1"
 
-prisma@^4.12.0:
+prisma@^4.12.0-integration-rtld-deepbind.3:
   version "4.12.0"
   resolved "https://registry.yarnpkg.com/prisma/-/prisma-4.12.0.tgz#1080eda951928cb3b0274ad29da9ae4f93143d68"
   integrity sha512-xqVper4mbwl32BWzLpdznHAYvYDWQQWK2tBfXjdUD397XaveRyAP7SkBZ6kFlIg8kKayF4hvuaVtYwXd9BodAg==
