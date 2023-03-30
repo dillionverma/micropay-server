@@ -301,6 +301,7 @@ export const init = (config: Config) => {
     map.session.set(k1, req.session);
 
     console.log("Lightning auth route test 1");
+    console.log("DB URL", process.env.DATABASE_URL);
 
     const lnauth = await prisma.lnAuth.create({
       data: {
