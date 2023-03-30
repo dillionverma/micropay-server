@@ -296,14 +296,19 @@ export const init = (config: Config) => {
   };
 
   app.get("/api/auth/lightning", async (req, res) => {
+    console.log("Lightning auth route test");
     let k1 = generatek1();
     map.session.set(k1, req.session);
+
+    console.log("Lightning auth route test 1");
 
     const lnauth = await prisma.lnAuth.create({
       data: {
         k1,
       },
     });
+
+    console.log("Lightning auth route test 2");
 
     return res.status(200).json({
       status: "OK",
