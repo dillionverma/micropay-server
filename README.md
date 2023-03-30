@@ -1,4 +1,4 @@
-<h1 align="center">Welcome to Lightning SMS Server 👋</h1>
+<h1 align="center">Welcome to Micropay Server👋</h1>
 
 <div align="center">
 
@@ -23,6 +23,7 @@
 - [Docker](#🚀-docker)
 - [Test](#🔧-test)
 - [Authors](#👤-authors)
+- [Database Schema Diagram](#🗺️-diagram)
 
 ## ✨ Install
 
@@ -55,6 +56,10 @@ docker compose up --build
 ```sh
 yarn test
 ```
+
+## Database Schema
+
+![Schema](./schema.svg)
 
 ## 👤 Authors
 

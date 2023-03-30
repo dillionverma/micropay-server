@@ -1,7 +1,7 @@
 import { createRequire } from "module";
 const requireMod = createRequire(import.meta.url);
 
-if (!process.env.CI) {
+if (process.env.CI === undefined || process.env.CI === "false") {
   requireMod("dotenv-safe").config({
     path: `.env.${process.env.NODE_ENV}`,
     allowEmptyValues: true,
@@ -19,6 +19,9 @@ export enum ENV_KEYS {
   DALLE_API_KEY = "dalleApiKey",
   DALLE_SECRET_KEY = "dalleSecretKey",
   DALLE_QUEUE_NAME = "dalleQueueName",
+  GENERATE_QUEUE_NAME = "generateQueueName",
+  BANANA_API_KEY = "bananaApiKey",
+  CLOUDFLARE_ACCOUNT_ID = "cloudflareAccountId",
   STABLE_DIFFUSION_QUEUE_NAME = "stableDiffusionQueueName",
   DALLE_QUEUE_CONCURRENCY = "dalleQueueConcurrency",
   STABLE_DIFFUSION_QUEUE_CONCURRENCY = "stableDiffusionQueueConcurrency",
@@ -48,6 +51,12 @@ export enum ENV_KEYS {
   TWITTER_ACCESS_TOKEN = "twitterAccessToken",
   TWITTER_ACCESS_SECRET = "twitterAccessSecret",
   OPENAI_API_KEY = "openaiApiKey",
+
+  DISCORD_CLIENT_ID = "discordClientId",
+  DISCORD_CLIENT_SECRET = "discordClientSecret",
+
+  GOOGLE_CLIENT_ID = "googleClientId",
+  GOOGLE_CLIENT_SECRET = "googleClientSecret",
 }
 
 export interface Config {
@@ -61,6 +70,9 @@ export interface Config {
   [ENV_KEYS.DALLE_API_KEY]: string;
   [ENV_KEYS.DALLE_SECRET_KEY]: string;
   [ENV_KEYS.DALLE_QUEUE_NAME]: string;
+  [ENV_KEYS.GENERATE_QUEUE_NAME]: string;
+  [ENV_KEYS.BANANA_API_KEY]: string;
+  [ENV_KEYS.CLOUDFLARE_ACCOUNT_ID]: string;
   [ENV_KEYS.STABLE_DIFFUSION_QUEUE_NAME]: string;
   [ENV_KEYS.STABLE_DIFFUSION_QUEUE_CONCURRENCY]: string;
   [ENV_KEYS.DALLE_QUEUE_CONCURRENCY]: string;
@@ -90,6 +102,12 @@ export interface Config {
   [ENV_KEYS.TWITTER_ACCESS_TOKEN]: string;
   [ENV_KEYS.TWITTER_ACCESS_SECRET]: string;
   [ENV_KEYS.OPENAI_API_KEY]: string;
+
+  [ENV_KEYS.DISCORD_CLIENT_ID]: string;
+  [ENV_KEYS.DISCORD_CLIENT_SECRET]: string;
+
+  [ENV_KEYS.GOOGLE_CLIENT_ID]: string;
+  [ENV_KEYS.GOOGLE_CLIENT_SECRET]: string;
 }
 
 export const config: Config = {
@@ -106,6 +124,9 @@ export const config: Config = {
   [ENV_KEYS.DALLE_API_KEY]: process.env.DALLE_API_KEY,
   [ENV_KEYS.DALLE_SECRET_KEY]: process.env.DALLE_SECRET_KEY,
   [ENV_KEYS.DALLE_QUEUE_NAME]: process.env.DALLE_QUEUE_NAME,
+  [ENV_KEYS.GENERATE_QUEUE_NAME]: process.env.GENERATE_QUEUE_NAME,
+  [ENV_KEYS.BANANA_API_KEY]: process.env.BANANA_API_KEY,
+  [ENV_KEYS.CLOUDFLARE_ACCOUNT_ID]: process.env.CLOUDFLARE_ACCOUNT_ID,
   [ENV_KEYS.STABLE_DIFFUSION_QUEUE_CONCURRENCY]:
     process.env.STABLE_DIFFUSION_QUEUE_CONCURRENCY,
   [ENV_KEYS.STABLE_DIFFUSION_QUEUE_NAME]:
@@ -143,4 +164,10 @@ export const config: Config = {
   [ENV_KEYS.TWITTER_ACCESS_TOKEN]: process.env.TWITTER_ACCESS_TOKEN,
   [ENV_KEYS.TWITTER_ACCESS_SECRET]: process.env.TWITTER_ACCESS_SECRET,
   [ENV_KEYS.OPENAI_API_KEY]: process.env.OPENAI_API_KEY,
+
+  [ENV_KEYS.DISCORD_CLIENT_ID]: process.env.DISCORD_CLIENT_ID,
+  [ENV_KEYS.DISCORD_CLIENT_SECRET]: process.env.DISCORD_CLIENT_SECRET,
+
+  [ENV_KEYS.GOOGLE_CLIENT_ID]: process.env.GOOGLE_CLIENT_ID,
+  [ENV_KEYS.GOOGLE_CLIENT_SECRET]: process.env.GOOGLE_CLIENT_SECRET,
 };

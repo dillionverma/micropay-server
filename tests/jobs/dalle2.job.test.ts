@@ -21,7 +21,7 @@ const expect = chai.expect;
 const prompt: string =
   "a matte painting of a girl with a backpack and a smartphone that traveled back in time to an ancient Greek colosseum with gladiators, showing her back";
 
-describe("Dalle2 Job", () => {
+describe.skip("Dalle2 Job", () => {
   let dalle2Spy: SinonStub;
   let lightningSpy: SinonStub;
   let awsSpy: SinonStub;

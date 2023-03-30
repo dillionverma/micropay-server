@@ -5,11 +5,11 @@ import { stability, telegramBot } from "../server";
 import { connection } from "../services/redis.service";
 import { Order, supabase } from "../services/supabase.service";
 
-export interface GenerateJob {
+export interface StableDiffusionGenerateJob {
   prompt: string;
 }
 
-export const stableDiffusionQueue = new Queue<GenerateJob>(
+export const stableDiffusionQueue = new Queue<StableDiffusionGenerateJob>(
   config.stableDiffusionQueueName,
   {
     connection,
@@ -19,7 +19,7 @@ export const stableDiffusionQueue = new Queue<GenerateJob>(
 // Core assumptions of this code is that
 // job.id === order.uuid
 
-export const stableDiffusionWorker = new Worker<GenerateJob>(
+export const stableDiffusionWorker = new Worker<StableDiffusionGenerateJob>(
   config.stableDiffusionQueueName,
   async (job: Job) => {
     console.log("Starting job", job.id);

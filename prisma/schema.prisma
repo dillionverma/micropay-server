@@ -1,0 +1,173 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+generator dbml {
+  provider = "prisma-dbml-generator"
+  output   = "./"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Model {
+  id           String  @unique @default(uuid()) @db.Uuid
+  name         String
+  author       String
+  authorUrl    String
+  description  String
+  modelKey     String?
+  active       Boolean @default(true)
+  unitPriceUSD Float   @default(0)
+
+  task  Task[]
+  image Image[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Task {
+  id     String @unique @default(uuid()) @db.Uuid
+  params Json
+
+  images Image[]
+
+  user    User   @relation(fields: [userId], references: [id])
+  userId  String
+  model   Model  @relation(fields: [modelId], references: [id])
+  modelId String @db.Uuid
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Image {
+  id           String  @unique @default(uuid()) @db.Uuid
+  width        Int
+  height       Int
+  format       String?
+  url          String?
+  thumbnailUrl String?
+  views        BigInt  @default(0)
+
+  likes Like[]
+
+  user    User   @relation(fields: [userId], references: [id])
+  userId  String
+  task    Task   @relation(fields: [taskId], references: [id])
+  taskId  String @db.Uuid
+  model   Model  @relation(fields: [modelId], references: [id])
+  modelId String @db.Uuid
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Like {
+  user    User   @relation(fields: [userId], references: [id])
+  userId  String
+  image   Image  @relation(fields: [imageId], references: [id])
+  imageId String @db.Uuid
+
+  createdAt DateTime @default(now())
+
+  @@id([userId, imageId])
+}
+
+model Follows {
+  follower    User   @relation("follower", fields: [followerId], references: [id])
+  followerId  String
+  following   User   @relation("following", fields: [followingId], references: [id])
+  followingId String
+
+  createdAt DateTime @default(now())
+  // updatedAt DateTime @updatedAt
+
+  @@id([followerId, followingId])
+}
+
+model User {
+  id            String    @unique @default(cuid())
+  username      String
+  name          String?
+  email         String?   @unique
+  emailVerified DateTime?
+  image         String?
+
+  sats BigInt @default(0)
+
+  accounts  Account[]
+  tasks     Task[]
+  images    Image[]
+  likes     Like[]
+  invoices  Invoice[]
+  followers Follows[] @relation("following")
+  following Follows[] @relation("follower")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Invoice {
+  id String @unique @default(cuid())
+
+  // Invoice fields
+  invoiceId   String    @unique
+  amount      Int
+  request     String
+  confirmed   Boolean   @default(false)
+  confirmedAt DateTime?
+
+  // Custom fields
+  quick Boolean @default(false)
+
+  user   User   @relation(fields: [userId], references: [id])
+  userId String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Account {
+  id     String @id @default(cuid())
+  userId String
+  type   String // 'oauth' | 'lnurl-auth'
+
+  provider          String? // for OAuth only
+  providerAccountId String? // for OAuth only
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  linkingPublicKey String? @unique // for lnurl-auth only
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([provider, providerAccountId])
+}
+
+model LnAuth {
+  id String @id @default(cuid())
+
+  k1               String  @unique
+  linkingPublicKey String? // for lnurl-auth only
+
+  // userId String?
+  // user   User?   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
