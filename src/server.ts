@@ -21,7 +21,7 @@ import { prisma } from "./db/prisma.service";
 import { checkInvoiceQueue } from "./jobs/checkInvoice.job";
 import { generationQueue } from "./jobs/dalle2.job";
 import { stableDiffusionQueue } from "./jobs/stableDiffusion.job";
-import { generateQueue, TaskParams } from "./jobs/task.job";
+import { TaskParams, generateQueue } from "./jobs/task.job";
 import AWS from "./services/aws.service";
 import Dalle2 from "./services/dalle2.service";
 import Lightning from "./services/lightning.service";
@@ -393,6 +393,16 @@ export const init = (config: Config) => {
             },
           });
 
+          // if account created in last 1 minute, send slack message
+          if (account.user.createdAt > new Date(Date.now() - 1000 * 60 * 1)) {
+            const res = await axios.post(
+              "https://hooks.slack.com/services/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",
+              {
+                text: `${account.user.username} just signed up via lightning! 🎉`,
+              }
+            );
+          }
+
           // session.user = account.user;
           session.passport = session.passport || {};
           session.passport.user = account.user.id;
@@ -480,6 +490,16 @@ export const init = (config: Config) => {
             user: true,
           },
         });
+
+        // if account created in last 1 minute, send slack message
+        if (account.user.createdAt > new Date(Date.now() - 1000 * 60 * 1)) {
+          const res = await axios.post(
+            "https://hooks.slack.com/services/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",
+            {
+              text: `${account.user.username} just signed up via google! 🎉`,
+            }
+          );
+        }
         return done(null, account.user);
       }
     )
@@ -526,6 +546,16 @@ export const init = (config: Config) => {
             user: true,
           },
         });
+
+        // if account created in last 1 minute, send slack message
+        if (account.user.createdAt > new Date(Date.now() - 1000 * 60 * 1)) {
+          const res = await axios.post(
+            "https://hooks.slack.com/services/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",
+            {
+              text: `${account.user.username} just signed up via discord! 🎉`,
+            }
+          );
+        }
         return done(null, account.user);
       }
     )

@@ -5,6 +5,7 @@
 import { Job, Queue, UnrecoverableError, Worker } from "bullmq";
 import { prisma } from "../db/prisma.service";
 
+import axios from "axios";
 import { lightning } from "../server";
 import { connection } from "../services/redis.service";
 
@@ -48,6 +49,13 @@ export const checkInvoiceWorker = new Worker<CheckInvoiceJob>(
           },
         },
       });
+
+      const res = await axios.post(
+        "https://hooks.slack.com/services/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",
+        {
+          text: `User ${user.username} deposited ${invoice.tokens} sats 🎉`,
+        }
+      );
     } else if (invoice.is_canceled) {
       throw new UnrecoverableError("Invoice canceled");
     } else if (new Date(invoice.expires_at) > new Date()) {
