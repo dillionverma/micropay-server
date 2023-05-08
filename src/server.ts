@@ -56,7 +56,11 @@ const apiLimiter = rateLimit({
   }),
 });
 
-export const aws = new AWS(config.awsAccessKey, config.awsSecretKey);
+export const aws = new AWS(
+  config.cloudflareAccountId,
+  config.awsAccessKey,
+  config.awsSecretKey
+);
 export const dalle2 = new Dalle2(config.dalleApiKey, config.dalleSecretKey);
 export const stability = new Stability(config.stabilityApiKey);
 

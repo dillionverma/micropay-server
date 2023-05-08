@@ -93,9 +93,10 @@ export const generationWorker = new Worker<GenerateJob>(
       images = await Promise.all(
         imageBuffers.map((buffer) =>
           aws.uploadImageBufferToS3(
+            "micropay",
             buffer,
             `${uuidv4()}.png`,
-            config.awsDalleBucketName
+            "png"
           )
         )
       );

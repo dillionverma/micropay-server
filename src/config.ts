@@ -48,6 +48,7 @@ export enum ENV_KEYS {
   TWITTER_ACCESS_TOKEN = "twitterAccessToken",
   TWITTER_ACCESS_SECRET = "twitterAccessSecret",
   OPENAI_API_KEY = "openaiApiKey",
+  CLOUDFLARE_ACCOUNT_ID = "cloudflareAccountId",
 }
 
 export interface Config {
@@ -90,6 +91,7 @@ export interface Config {
   [ENV_KEYS.TWITTER_ACCESS_TOKEN]: string;
   [ENV_KEYS.TWITTER_ACCESS_SECRET]: string;
   [ENV_KEYS.OPENAI_API_KEY]: string;
+  [ENV_KEYS.CLOUDFLARE_ACCOUNT_ID]: string;
 }
 
 export const config: Config = {
@@ -143,4 +145,5 @@ export const config: Config = {
   [ENV_KEYS.TWITTER_ACCESS_TOKEN]: process.env.TWITTER_ACCESS_TOKEN,
   [ENV_KEYS.TWITTER_ACCESS_SECRET]: process.env.TWITTER_ACCESS_SECRET,
   [ENV_KEYS.OPENAI_API_KEY]: process.env.OPENAI_API_KEY,
+  [ENV_KEYS.CLOUDFLARE_ACCOUNT_ID]: process.env.CLOUDFLARE_ACCOUNT_ID,
 };

@@ -1,5 +1,4 @@
 import { generateAsync } from "stability-client";
-import { config } from "../config";
 import { aws } from "../server";
 
 // https://github.com/vpzomtrrfrt/stability-client
@@ -38,9 +37,10 @@ export default class Stability {
     const urls: string[] = await Promise.all(
       images.map((image: StabilityResponse) =>
         aws.uploadImageBufferToS3(
+          "micropay",
           image.buffer,
           image.filePath.split("/").pop(),
-          config.awsStableDiffusionBucketName
+          "png"
         )
       )
     );
