@@ -33,7 +33,7 @@ describe("lightning", () => {
   describe("createInvoice", () => {
     it("should create an invoice", async () => {
       const description = "test invoice";
-      const amount = 1000;
+      const amount = 500;
       const invoice = await lightning.createInvoice(description, amount);
 
       expect(invoice).to.be.a("object");
@@ -48,7 +48,7 @@ describe("lightning", () => {
       expect(invoice.tokens).to.be.a("number");
 
       expect(invoice.description).to.equal(description);
-      expect(invoice.mtokens).to.equal((amount * 1000).toString());
+      expect(invoice.mtokens).to.equal((amount * 500).toString());
       expect(invoice.tokens).to.equal(amount);
     });
   });

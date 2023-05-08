@@ -67,7 +67,7 @@ export const telegramBot = new TelegramBot(
   config.telegramGroupIdMicropay
 );
 
-const DEFAULT_PRICE = process.env.NODE_ENV === "production" ? 1000 : 50;
+const DEFAULT_PRICE = process.env.NODE_ENV === "production" ? 500 : 50;
 
 export enum ORDER_STATE {
   INVOICE_NOT_FOUND = "INVOICE_NOT_FOUND",
